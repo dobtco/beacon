@@ -20,12 +20,12 @@ First, create a virtualenv and activate it. Then:
 ```bash
 git clone git@github.com:codeforamerica/beacon-standalone.git
 cd beacon-standalone
-# create the 'purchasing' database
-psql -c 'create database purchasing;'
+# create the 'beacon' database
+psql -c 'create database beacon;'
 # set environmental variables - it is recommended that you set these for your
 # your virtualenv, using a tool like autoenv or by modifying your activate script
 export ADMIN_EMAIL='youremail@someplace.net'
-export CONFIG=purchasing.settings.DevConfig
+export CONFIG=beacon.settings.DevConfig
 # this next command will do all installs, add tables to the database,
 # and insert seed data (note that this needs an internet connection to
 # scrape data from Allegheny County)
@@ -70,10 +70,10 @@ If you would like to send email over the Gmail SMTP server, you will need to add
 # the little elephant in your taskbar to open this instead of using
 # psql
 psql
-create database purchasing;
+create database beacon;
 ```
 
-Once you've created your database, you'll need to open `beacon/settings.py` and edit the `DevConfig` object to use the proper [SQLAlchemy database configuration string](http://docs.sqlalchemy.org/en/rel_1_0/core/engines.html#postgresql). If you named your database `purchasing`, you probably won't have to change anything. Then:
+Once you've created your database, you'll need to open `beacon/settings.py` and edit the `DevConfig` object to use the proper [SQLAlchemy database configuration string](http://docs.sqlalchemy.org/en/rel_1_0/core/engines.html#postgresql). If you named your database `beacon`, you probably won't have to change anything. Then:
 
 ```bash
 # upgrade your database to the latest version
@@ -100,7 +100,7 @@ bower install
 
 **login and user accounts**
 
-Right now, the Pittsburgh Purchasing Suite uses [persona](https://login.persona.org/about) to handle authentication. The app uses its own user database to manage roles and object-based authorization. You will need to sign in through persona and then enter yourself into the database in order to have access to admin and other pages.
+Right now, the Beacon uses [persona](https://login.persona.org/about) to handle authentication. The app uses its own user database to manage roles and object-based authorization. You will need to sign in through persona and then enter yourself into the database in order to have access to admin and other pages.
 
 A manage task has been created to allow you to quickly create a user to access the admin and other staff-only tasks. To add an email, run the following command (NOTE: if you updated your database as per above, you will probably want to give youself a role of 1, which will give you superadmin privledges), putting your email/desired role in the appropriate places:
 
@@ -147,7 +147,7 @@ Now, redis should be up and running. Before we launch our web app, we'll need to
 At this point, you'll be abel to boot up the celery worker. Our app's celery workers live in `beacon/celery_worker.py`. Start them as follows:
 
 ```bash
-celery --app=purchasing.celery_worker:celery worker --loglevel=debug
+celery --app=beacon.celery_worker:celery worker --loglevel=debug
 ```
 
 You can log at a higher level than debug (info, for example), if you want to get fewer messages.  Finally, we'll need to start our web app. You can do this as normal:
@@ -160,23 +160,23 @@ When all of these are running, you should be ready to go!
 
 #### Testing
 
-In order to run the tests, you will need to create a test database. You can follow the same procedures outlined in the install section. By default, the database should be named `purchasing_test`:
+In order to run the tests, you will need to create a test database. You can follow the same procedures outlined in the install section. By default, the database should be named `beacon_test`:
 
 ```bash
 psql
-create database purchasing_test;
+create database beacon_test;
 ```
 
-Tests are located in the `purchasing_test` directory. To run the tests, run
+Tests are located in the `test` directory. To run the tests, run
 
 ```bash
-PYTHONPATH=. nosetests purchasing_test/
+PYTHONPATH=. nosetests test/
 ```
 
 from inside the root directory. For more coverage information, run
 
 ```bash
-PYTHONPATH=. nosetests purchasing_test/ -v --with-coverage --cover-package=purchasing_test --cover-erase
+PYTHONPATH=. nosetests test/ -v --with-coverage --cover-package=beacon --cover-erase
 ```
 
 ## License
