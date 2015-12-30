@@ -1,0 +1,175 @@
+{% extends "beacon/layout.html" %}
+{% import "macros/with_errors.html" as macros %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+      <form method="POST" enctype="multipart/form-data" action="{% if opportunity.id %}{{ url_for('beacon_admin.edit', opportunity_id=opportunity.id) }}{% else %}{{ url_for('beacon_admin.new') }}{% endif %}" id="js-opportunity-form">
+
+        {{ form.csrf_token() }}
+
+        {% include "includes/flashes.html" %}
+
+        {% if form.errors.keys()|length > 0 %}
+        <div class="alert alert-danger alert-dismissible flashed-alert fade in" role="alert">
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <i class="fa fa-exclamation-triangle"></i> There were problems submitting your opportunity! Please check below and correct them.
+        </div>
+        {% endif %}
+
+        <h4>Post an Opportunity</h4>
+        <h3>Fill out this form, and OMB will publish your opportunity to the City of Pittsburgh's new Opportunities website.</h3>
+        {% if opportunity.id %}
+        <p><a href="{{ url_for('front.detail', opportunity_id=opportunity.id) }}">View this opportunity on Beacon.</a></p>
+        {% endif %}
+
+        <div class="form-group">
+          <label for="department" class="control-label">Department <span class="form-required">*</span></label>
+          <p class="help-block">Who is the using department for this opportunity?</p>
+          {{ macros.with_errors(form.department, class_="form-control")}}
+        </div><!-- department -->
+
+        <div class="form-group">
+          <label for="contact_email" class="control-label">Contact Email <span class="form-required">*</span></label>
+          <p class="help-block">What is the email of the primary contact for this opportunity?</p>
+          {{ macros.with_errors(form.contact_email, class_="form-control", placeholder="ex: example@pittsburghpa.gov")}}
+        </div><!-- email -->
+
+        <div class="form-group">
+          <label for="opportunity_type" class="control-label">Opportunity Type <span class="form-required">*</span></label>
+          <p class="help-block">What type of opportunity is this?</p>
+          {{ macros.with_errors(form.opportunity_type, class="form-control") }}
+        </div><!-- opportunity type -->
+
+        <div class="form-group">
+          <label for="title" class="control-label">Title <span class="form-required">*</span></label>
+          <p class="help-block">What do you want your opportunity to be named?</p>
+          {{ macros.with_errors(form.title, class_="form-control", placeholder="ex: What you need")}}
+        </div><!-- title -->
+
+        <div class="form-group">
+          <label for="description" class="control-label">Description <span class="form-required">*</span></label>
+          <p class="help-block">How would you describe what you are looking to purchase (no more than 500 words).</p>
+          {{ macros.with_errors(form.description, class_="form-control", rows=4, placeholder="ex: The City of Pittsburgh will need to purchase...")}}
+        </div><!-- description -->
+
+        <div class="row">
+          <div class="col-sm-4">
+            <div class="form-group">
+              <label for="planned_publish" class="control-label">Publish Date <span class="form-required">*</span></label>
+              <p class="help-block">
+                When do you want this opportunity to be made public? If you are uncertain, use an approximate date.
+              </p>
+              {{ macros.with_errors(form.planned_publish, class_="form-control datepicker", placeholder="ex: 2015-01-01")}}
+            </div><!-- date published to beacon -->
+          </div>
+
+          <div class="col-sm-4">
+            <div class="form-group">
+              <label for="planned_submission_start" class="control-label">Submission Start Date <span class="form-required">*</span></label>
+              <p class="help-block">
+                When do you want to start receiving responses to this opportunity? If you are uncertain, use an approximate date.
+              </p>
+              {{ macros.with_errors(form.planned_submission_start, class_="form-control datepicker", placeholder="ex: 2015-01-01")}}
+            </div><!-- date submissions accepted -->
+          </div>
+
+          <div class="col-sm-4">
+            <div class="form-group">
+              <label for="planned_submission_end" class="control-label">Submission End Date <span class="form-required">*</span></label>
+              <p class="help-block">
+                When is the deadline for vendors to respond to this opportunity? If you are uncertain, use an approximate date.
+              </p>
+              {{ macros.with_errors(form.planned_submission_end, class_="form-control datetimepicker", placeholder="ex: 2015-01-01")}}
+            </div><!-- date submissions no longer accepted -->
+          </div>
+        </div><!-- dates -->
+
+        <div class="form-group">
+          <label for="vendor_documents_needed" class="control-label">Documents the vendor will need</label>
+            <p class="help-block">
+              Choose the documents that vendor will need to include in order to successfully respond to the opportunity.
+            </p>
+            {{ form.vendor_documents_needed }}
+        </div><!-- documents needed -->
+
+        <div class="form-group">
+          <label for="document" class="control-label">Upload your solicitation documents.</label>
+          <p class="help-block">
+            We accept .pdf, Word (.doc/.docx), and Excel (.xls/.xlsx) documents only.
+          </p>
+
+          {% if opportunity and opportunity.opportunity_documents.all()|length > 0 %}
+            <p><strong>Uploaded files:</strong></p>
+            <ul>
+              {% for document in opportunity.opportunity_documents %}
+              <li>
+                <a href="{{ document.get_href() }}" target="_blank">{{ document.name }}</a>
+                <span class="pull-right"><a class="js-confirm-delete" href="{{ url_for('beacon_admin.remove_document', opportunity_id=opportunity.id, document_id=document.id) }}" data-confirm="Are you sure you want to delete this document? This cannot be undone."><i class="fa fa-trash-o"></i></a></span>
+              </li>
+              {% if not loop.last %}<hr class="hr-no-padding">{% endif %}
+              {% endfor %}
+            </ul>
+
+          <p><strong>Upload additional files:</strong>
+          {% endif %}
+
+          {% include 'beacon/admin/opportunity_upload.html' %}
+
+        </div><!-- document upload -->
+
+        <div class="row">
+          <div class="col-sm-12">
+            <label>Which categories would you use to describe this opportunity?</label>
+            <p class="help-block">Feel free to choose as many categories as you would like.</p>
+          </div>
+
+          {% include 'beacon/_categories.html' %}
+
+        </div>
+
+        <div class="spacer-20"></div>
+
+        {% if opportunity.is_public %}
+        <button type="submit" class="btn btn-primary col-sm-6">
+          Save Changes
+        </button>
+        {% elif current_user.is_conductor() %}
+
+        <input class="span2" id="save_type" name="save_type" type="hidden">
+
+        <div class="row">
+          <div class="col-xs-6">
+            <button type="submit" class="btn btn-primary col-sm-12 dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Save <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu submit-dropdown">
+              <li><a href="#" onclick="$('#save_type').val('save'); $('#js-opportunity-form').submit()">Save as draft</a></li>
+              <li><a href="#" onclick="$('#save_type').val('publish'); $('#js-opportunity-form').submit()">Save and publish on Publish Date</a></li>
+            </ul>
+          </div>
+        </div>
+
+        {% else %}
+        <button type="submit" class="btn btn-primary col-sm-6">
+          Submit to OMB
+        </button>
+        {% endif %}
+
+      </form>
+
+      <div class="spacer-50"></div>
+
+    </div><!-- form wrapper -->
+  </div>
+</div>
+
+{% endblock %}
+
+{% block jsvars %}
+<script type="text/javascript">
+  var subcategories = {{ subcategories|safe }};
+  var categories = {{ categories|safe }};
+</script>
+{% endblock %}

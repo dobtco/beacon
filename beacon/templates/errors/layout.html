@@ -1,0 +1,18 @@
+{% extends 'layout.html' %}
+
+{% block assets %}
+  {% assets "css_all" %}
+    <link rel="stylesheet" href="{{ ASSET_URL }}">
+  {% endassets %}
+{% endblock %}
+
+{% block nav %}
+  {% include "nav.html" %}
+{% endblock %}
+
+{% block js %}
+  {{ super() }}
+  {% assets "publicjs" %}
+    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+  {% endassets %}
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "errors/layout.html" %}
+
+{% block page_title %}Server error{% endblock %}
+
+{% block content %}
+{{ super() }}
+<div class="container">
+  <div class="jumbotron">
+    <div class="text-center">
+      <h1>413</h1>
+      <p>You tried to upload a file that is too big!</p>
+  </div>
+</div>
+{% endblock %}
+

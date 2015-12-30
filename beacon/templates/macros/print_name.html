@@ -1,0 +1,7 @@
+{% macro print_name(action, user) %}
+  {%- if action.taken_by == user.id %}
+    You
+  {%- else %}
+    {{ action.taken_by|print_user_name }}
+  {%- endif %}
+{% endmacro %}

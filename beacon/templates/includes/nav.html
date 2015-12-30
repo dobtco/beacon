@@ -1,0 +1,22 @@
+<nav class="navbar navbar-default navbar-background navbar-fixed-top" role="navigation">
+  <div class="container">
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse navbar-ex1-collapse">
+
+      <ul class="nav navbar-nav">
+        {% block applinks %}{% endblock %}
+      </ul>
+
+      <ul class="nav navbar-nav navbar-right">
+      {% block nav_login %}
+        {% include "includes/nav-login.html" %}
+      {% endblock %}
+      </ul>
+
+      <ul class="nav navbar-nav navbar-right">
+        {% block applinks_right %}{% endblock %}
+      </ul>
+
+    </div><!-- /.navbar-collapse -->
+  </div>
+</nav>

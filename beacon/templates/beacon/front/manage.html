@@ -1,0 +1,114 @@
+{% extends "beacon/layout.html" %}
+{% import "macros/with_errors.html" as macros %}
+
+{% block content %}
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-8 col-sm-offset-2">
+      <h2>Manage your email subscriptions</h2>
+
+      {% include 'includes/flashes.html' %}
+
+      <form class="form-horizontal" method="POST">
+
+        {{ form.csrf_token() }}
+
+        <div class="form-group">
+          <div class="col-sm-12">
+            <label for="email">What's your email address? <span class="form-required">*</span></label>
+            {{ macros.with_errors(form.email, class_="form-control", placeholder="Email address") }}
+          </div>
+        </div><!-- /email -->
+
+        <div class="form-group">
+          <div class="col-sm-6">
+            <input type="submit" class="btn btn-primary form-control" value="Look up" name="button">
+          </div>
+        </div><!-- /email lookup group -->
+
+        {% if form.categories.choices|length > 0 or form.opportunities.choices|length > 0 or vendor.subscribed_to_newsletter %}
+
+          <div id="js-subcategory-group-0">
+
+            {% if 'subscriptions' in form.errors.keys() %}
+            <div class="alert alert-danger alert-dismissable">
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+              <span>{{ form.errors['subscriptions'][0] }}</span>
+            </div>
+            {% endif %}
+
+            {% if form.categories.choices|length > 0 %}
+              <div class="row">
+                <div class="col-sm-12">
+                  <h4>Check the boxes to unsubscribe from the following categories:</h4>
+                  {% for subscription in form.categories %}
+                    <div class="col-sm-12">
+                      <div class="checkbox">
+                        {{ macros.with_errors(subscription, class_="js-subcategory") }}
+                        {{ subscription.label }}
+                      </div>
+                    </div><!-- categories -->
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="spacer-10"></div>
+
+            {% if form.opportunities.choices|length > 0 %}
+              <div class="row">
+                <div class="col-sm-12">
+                  <h4>Check the boxes to unsubscribe from these opportunities:</h4>
+                  {% for subscription in form.opportunities %}
+                  <div class="col-sm-12">
+                    <div class="checkbox">
+                      {{ macros.with_errors(subscription, class_="js-subcategory") }}
+                      {{ subscription.label }} - <a href="{{ url_for('form.detail', opportunity_id=subscription.object_data) }}">View details</a>
+                    </div>
+                  </div><!-- opportunities -->
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="spacer-10"></div>
+
+            {% if vendor.subscribed_to_newsletter %}
+            <div class="row">
+              <div class="col-sm-12">
+                <h4>Check this box to unsubscribe from Beacon biweekly updates:</h4>
+                <div class="col-sm-12">
+                  <div class="checkbox">
+                    {{ macros.with_errors(form.subscribed_to_newsletter) }}
+                    {{ form.subscribed_to_newsletter.label }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+
+          <div class="spacer-20"></div>
+
+          <div class="form-group">
+            <div class="col-sm-6">
+              <input type="submit" class="btn btn-primary form-control" value="Update email preferences" name="button">
+            </div>
+          </div>
+
+          <div class="spacer-30"></div>
+
+        {% elif vendor.email %}
+          <p>You are not subscribed to anything! Visit the <a href="{{ url_for('front.signup') }}">sign up</a> page to subscribe.</p>
+        {% endif %}
+
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

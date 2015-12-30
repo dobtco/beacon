@@ -1,0 +1,18 @@
+{% extends "errors/layout.html" %}
+
+{% block page_title %}Forbidden{% endblock %}
+
+{% block content %}
+{{ super() }}
+<div class="container">
+  <div class="jumbotron">
+    <div class="text-center">
+      <h1>403</h1>
+      <p>
+        You don't have permission to access this page. Try the <a href="{{ url_for('front.splash') }}">homepage</a>!
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

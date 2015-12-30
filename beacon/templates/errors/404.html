@@ -1,0 +1,18 @@
+
+{% extends "errors/layout.html" %}
+
+{% block page_title %}Page Not Found{% endblock %}
+
+{% block content %}
+{{ super() }}
+<div class="container">
+  <div class="jumbotron">
+    <div class="text-center">
+      <h1>404</h1>
+        <p>Sorry, that page doesn't exist.</p>
+        <p>Want to <a href="{{ url_for('front.splash') }}">go home</a> instead?</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
