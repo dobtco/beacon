@@ -7,7 +7,7 @@ env:
 - CONFIG='beacon.settings.TestConfig'
 before_script:
 - psql -c 'create database beacon_test;' -U postgres
-script: PYTHONPATH=. nosetests test/ --with-coverage --cover-package=purchasing
+script: PYTHONPATH=. nosetests test/ --with-coverage --cover-package=beacon
 addons:
   postgresql: "9.4"
 notifications:
