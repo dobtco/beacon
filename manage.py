@@ -175,7 +175,7 @@ def seed(user=None, secret=None, bucket=None):
     secret = secret if secret else os.environ.get('AWS_SECRET_ACCESS_KEY')
     bucket = bucket if bucket else os.environ.get('S3_BUCKET_NAME')
     # import seed nigp
-    import_nigp('./purchasing/data/importer/seed/2015-07-01-seed-nigp-cleaned.csv')
+    import_nigp('./beacon/importer/seed/2015-07-01-seed-nigp-cleaned.csv')
     print ''
 
 @manager.command
