@@ -11,11 +11,11 @@ from werkzeug.utils import import_string
 from flask import Flask, render_template
 from celery import Celery
 
-from flask_login import current_user
+from flask_security import current_user, SQLAlchemyUserDatastore
 
 from beacon.assets import assets, test_assets
 from beacon.extensions import (
-    bcrypt, cache, db, login_manager, admin,
+    cache, db, admin, security,
     migrate, debug_toolbar, s3, mail
 )
 
@@ -83,17 +83,34 @@ def create_app():
 
 def register_extensions(app):
     test_assets.init_app(app) if app.config.get('TESTING') else assets.init_app(app)
-    bcrypt.init_app(app)
     cache.init_app(app)
     db.init_app(app)
-    login_manager.init_app(app)
-    from beacon.models.users import AnonymousUser
-    login_manager.anonymous_user = AnonymousUser
     debug_toolbar.init_app(app)
     admin.init_app(app)
     migrate.init_app(app, db)
     s3.init_app(app)
     mail.init_app(app)
+
+    from beacon.forms.users import ExtendedRegisterForm
+    from beacon.models.users import AnonymousUser, User, Role
+
+    user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+    security_ctx = security.init_app(
+        app, user_datastore,
+        register_form=ExtendedRegisterForm,
+        confirm_register_form=ExtendedRegisterForm,
+        anonymous_user=AnonymousUser
+    )
+
+    from beacon.tasks import send_email
+    @security_ctx.send_mail_task
+    def async_security_email(msg):
+        send_email([msg])
+
+    app.config['SECURITY_MSG_UNAUTHORIZED'] = (
+        'You do not have sufficent permissions to do that! If you are staff, make sure you are logged in using the link to the upper right.',
+        'alert-warning',
+    )
 
     from flask_sslify import SSLify
     # only trigger SSLify if the app is running on Heroku
@@ -167,7 +184,7 @@ def register_logging(app, config_string):
             This is a filter which injects contextual information into the log.
             '''
             def filter(self, record):
-                user_id = current_user.email if not current_user.is_anonymous() else 'anonymous'
+                user_id = current_user.email if not current_user.is_anonymous else 'anonymous'
                 record.user_id = user_id
                 return True
 

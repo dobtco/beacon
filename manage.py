@@ -30,11 +30,14 @@ def _make_context():
 @manager.option('-e', '--email', dest='email', default=None)
 @manager.option('-r', '--role', dest='role', default=None)
 @manager.option('-d', '--department', dest='dept', default='Other')
-def seed_user(email, role, dept):
+@manager.option('-p', '--password', dest='password', default='password')
+def seed_user(email, role, dept, password):
     '''
     Creates a new user in the database.
     '''
-    from beacon.models.users import User, Department
+    from beacon.models.users import User, Role, Department
+    from flask_security import SQLAlchemyUserDatastore
+    user_datastore = SQLAlchemyUserDatastore(db, User, Role)
     seed_email = email if email else app.config.get('SEED_EMAIL')
     user_exists = User.query.filter(User.email == seed_email).first()
     department = Department.query.filter(
@@ -44,13 +47,13 @@ def seed_user(email, role, dept):
         print 'User {email} already exists'.format(email=seed_email)
     else:
         try:
-            new_user = User.create(
+            user_datastore.create_user(
                 email=seed_email,
                 created_at=datetime.datetime.utcnow(),
-                role_id=role,
-                department=department if department else None
+                department=department if department else None,
+                password=password,
+                roles=[Role.query.get(int(role))]
             )
-            db.session.add(new_user)
             db.session.commit()
             print 'User {email} successfully created!'.format(email=seed_email)
         except Exception, e:

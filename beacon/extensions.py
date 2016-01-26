@@ -3,16 +3,11 @@
 in app.py
 """
 
-from beacon.decorators import AuthMixin
-
-from flask_bcrypt import Bcrypt
-bcrypt = Bcrypt()
-
-from flask_login import LoginManager
-login_manager = LoginManager()
-
 from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
+
+from flask_security import Security, current_user
+security = Security()
 
 from flask_migrate import Migrate
 migrate = Migrate()
@@ -30,6 +25,16 @@ from flask_mail import Mail
 mail = Mail()
 
 from flask_admin import Admin, AdminIndexView, expose
+class AuthMixin(object):
+    accepted_roles = ['admin']
+
+    def is_accessible(self):
+        if current_user.is_anonymous:
+            return False
+        if current_user.role.name in self.accepted_roles:
+            return True
+        return False
+
 class PermissionsBase(AuthMixin, AdminIndexView):
     @expose('/')
     def index(self):

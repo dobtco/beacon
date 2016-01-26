@@ -7,13 +7,14 @@ from shutil import rmtree
 
 from flask import current_app
 
-from beacon.models.opportunities import Category, Vendor
+from beacon.models.opportunities import Category
 from beacon.importer.nigp import main as import_nigp
 
 from test.test_base import BaseTestCase
 from test.factories import (
     DepartmentFactory, OpportunityTypeFactory, RequiredBidDocumentFactory,
-    UserFactory, RoleFactory, OpportunityFactory
+    UserFactory, RoleFactory, OpportunityFactory, VendorFactory,
+    AcceptedEmailDomainsFactory
 )
 
 class TestOpportunitiesFrontBase(BaseTestCase):
@@ -35,16 +36,18 @@ class TestOpportunitiesAdminBase(BaseTestCase):
         self.department1 = DepartmentFactory(name='test')
         self.opportunity_type = OpportunityTypeFactory.create()
 
+        AcceptedEmailDomainsFactory.create(domain='foo.com')
+
         self.admin = UserFactory.create(
-            email='foo@foo.com', role=RoleFactory.create(name='admin')
+            email='foo@foo.com', roles=[RoleFactory.create(name='admin')]
         )
         self.staff = UserFactory.create(
-            email='foo2@foo.com', role=RoleFactory.create(name='staff')
+            email='foo2@foo.com', roles=[RoleFactory.create(name='staff')]
         )
 
         self.document = RequiredBidDocumentFactory.create()
 
-        self.vendor = Vendor.create(email='foo@foo.com', business_name='foo2')
+        self.vendor = VendorFactory.create(email='foo@foo.com', business_name='foo2')
 
         self.opportunity1 = OpportunityFactory.create(
             contact=self.admin, created_by=self.staff,

@@ -135,7 +135,7 @@
         <button type="submit" class="btn btn-primary col-sm-6">
           Save Changes
         </button>
-        {% elif current_user.is_conductor() %}
+        {% elif current_user.is_approver() %}
 
         <input class="span2" id="save_type" name="save_type" type="hidden">
 

@@ -1,0 +1,17 @@
+<hr>
+<h4>More</h4>
+<ul>
+  <li><a href="{{ url_for_security('login') }}{% if 'next' in request.args %}?next={{ request.args.next|urlencode }}{% endif %}">Login</a></li>
+  {% if security.registerable %}
+  <li><a href="{{ url_for_security('register') }}{% if 'next' in request.args %}?next={{ request.args.next|urlencode }}{% endif %}">Sign up</a><br/></li>
+  {% endif %}
+  {% if security.recoverable %}
+  <li><a href="{{ url_for_security('forgot_password') }}">Recover your password</a><br/></li>
+  {% endif %}
+  {% if security.confirmable %}
+  <li><a href="{{ url_for_security('send_confirmation') }}">Confirm account</a></li>
+  {% endif %}
+  {% if security.changeable and not _current_user.is_anonymous %}
+  <li><a href="{{ url_for_security('change_password') }}">Change Password</a></li>
+  {% endif %}
+</ul>

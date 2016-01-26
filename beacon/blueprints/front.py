@@ -7,7 +7,7 @@ from flask import (
     redirect, url_for, session, abort, Blueprint
 )
 
-from flask_login import current_user
+from flask_security import current_user
 
 from beacon.database import db
 from beacon.notifications import Notification
@@ -97,8 +97,8 @@ def signup():
             ).send()
 
             if confirmation_sent:
-                admins = db.session.query(User.email).join(Role, User.role_id == Role.id).filter(
-                    Role.name.in_(['admin', 'superadmin'])
+                admins = db.session.query(User.email).filter(
+                    User.roles.any(Role.name.in_(['admin',]))
                 ).all()
 
                 Notification(

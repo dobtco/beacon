@@ -3,7 +3,7 @@
 {% block brandhref %}{{ url_for('front.splash') }}{% endblock %}
 
 {% block app_dropdown %}
-  {% if current_user.is_anonymous() %}
+  {% if current_user.is_anonymous %}
     <a href="{{ url_for('front.splash') }}" class="btn nav-dropdown-btn navbar-brand">Beacon</a>
   {% else %}
     {{ super() }}
@@ -29,7 +29,7 @@
 <li><a href="{{ url_for('front.signup') }}" class="navbar-link">Subscribe</a></li>
 <li><a href="{{ url_for('front.manage') }}" class="navbar-link">Manage subscriptions</a></li>
 
-{% if not current_user.is_anonymous() %}
+{% if not current_user.is_anonymous %}
 <li class="dropdown">
   <a class="dropdown-toggle navbar-link" data-toggle="dropdown" aria-expanded="false">
     Manage Opportunities

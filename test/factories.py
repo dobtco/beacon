@@ -7,6 +7,7 @@ from factory.alchemy import SQLAlchemyModelFactory
 
 from beacon.database import db
 from beacon.models.users import User, Role, Department
+from beacon.models.public import AcceptedEmailDomains
 
 from beacon.models.opportunities import (
     Opportunity, RequiredBidDocument, OpportunityDocument, Category,
@@ -22,6 +23,7 @@ class BaseFactory(SQLAlchemyModelFactory):
 class RoleFactory(BaseFactory):
     id = factory.Sequence(lambda n: n)
     name = factory.Sequence(lambda n: '{}'.format(n))
+    description = factory.Sequence(lambda n: 'description - {}'.format(n))
 
     class Meta:
         model = Role
@@ -41,7 +43,14 @@ class UserFactory(BaseFactory):
     last_name = factory.Sequence(lambda n: '{}'.format(n))
     department = factory.SubFactory(DepartmentFactory)
     active = factory.Sequence(lambda n: True)
-    role = factory.SubFactory(RoleFactory)
+    confirmed_at = factory.Sequence(lambda n: datetime.datetime.now())
+    password = 'password'
+
+    @factory.post_generation
+    def roles(self, create, extracted, **kwargs):
+        if extracted:
+            for role in extracted:
+                self.roles.append(role)
 
     class Meta:
         model = User
@@ -58,6 +67,7 @@ class OpportunityFactory(BaseFactory):
     department = factory.SubFactory(DepartmentFactory)
     contact = factory.SubFactory(UserFactory)
     created_by = factory.SubFactory(UserFactory)
+    vendor_documents_needed = []
     title = 'Default'
 
     @factory.post_generation
@@ -96,6 +106,7 @@ class VendorFactory(BaseFactory):
         model = Vendor
 
 class RequiredBidDocumentFactory(BaseFactory):
+    id = factory.Sequence(lambda n: n + 100)
     display_name = 'name'
     description = 'description'
 
@@ -109,3 +120,7 @@ class OpportunityDocumentFactory(BaseFactory):
 class JobStatusFactory(BaseFactory):
     class Meta:
         model = JobStatus
+
+class AcceptedEmailDomainsFactory(BaseFactory):
+    class Meta:
+        model = AcceptedEmailDomains
