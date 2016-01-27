@@ -235,6 +235,7 @@ def upgrade():
 
     op.bulk_insert(roles, [
         {'name': 'admin'},
+        {'name': 'approver'},
         {'name': 'staff'}
     ])
 

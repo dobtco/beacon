@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
-from flask.ext.login import UserMixin, AnonymousUserMixin
+from flask_security import UserMixin, RoleMixin
+from flask_login import AnonymousUserMixin
 
 from beacon.database import Column, db, Model, ReferenceCol, SurrogatePK
 from sqlalchemy.orm import backref
 
-class Role(SurrogatePK, Model):
+roles_users = db.Table(
+    'roles_users',
+    db.Column('user_id', db.Integer(), db.ForeignKey('users.id')),
+    db.Column('role_id', db.Integer(), db.ForeignKey('roles.id'))
+)
+
+class Role(RoleMixin, SurrogatePK, Model):
     '''Model to handle view-based permissions
 
     Attributes:
@@ -13,6 +20,7 @@ class Role(SurrogatePK, Model):
     '''
     __tablename__ = 'roles'
     name = Column(db.String(80), unique=True, nullable=False)
+    description = Column(db.String(255), unique=True)
 
     def __repr__(self):
         return '<Role({name})>'.format(name=self.name)
@@ -38,6 +46,15 @@ class Role(SurrogatePK, Model):
         '''
         return cls.query.filter(cls.name != 'superadmin')
 
+    @classmethod
+    def staff_factory(cls):
+        '''Factory to return the staff role
+
+        Returns:
+            Role object with the name 'staff'
+        '''
+        return cls.query.filter(cls.name == 'staff')
+
 class User(UserMixin, SurrogatePK, Model):
     '''User model
 
@@ -59,10 +76,9 @@ class User(UserMixin, SurrogatePK, Model):
     last_name = Column(db.String(30), nullable=True)
     active = Column(db.Boolean(), default=True)
 
-    role_id = ReferenceCol('roles', ondelete='SET NULL', nullable=True)
-    role = db.relationship(
-        'Role', backref=backref('users', lazy='dynamic'),
-        foreign_keys=role_id, primaryjoin='User.role_id==Role.id'
+    roles = db.relationship(
+        'Role', secondary=roles_users,
+        backref=backref('users', lazy='dynamic'),
     )
 
     department_id = ReferenceCol('department', ondelete='SET NULL', nullable=True)
@@ -71,11 +87,26 @@ class User(UserMixin, SurrogatePK, Model):
         foreign_keys=department_id, primaryjoin='User.department_id==Department.id'
     )
 
+    password = db.Column(db.String(255))
+
+    confirmed_at = db.Column(db.DateTime)
+    last_login_at = db.Column(db.DateTime)
+    current_login_at = db.Column(db.DateTime)
+    last_login_ip = db.Column(db.String(255))
+    current_login_ip = db.Column(db.String(255))
+    login_count = db.Column(db.Integer)
+
     def __repr__(self):
         return '<User({email!r})>'.format(email=self.email)
 
     def __unicode__(self):
         return self.email
+
+    @property
+    def role(self):
+        if len(self.roles) > 0:
+            return self.roles[0]
+        return Role(name='')
 
     @property
     def full_name(self):
@@ -93,46 +124,27 @@ class User(UserMixin, SurrogatePK, Model):
             db.func.lower(Department.name) != 'equal opportunity review commission'
         )
 
-    @classmethod
-    def county_purchaser_factory(cls):
-        return cls.query.join(
-            Role, User.role_id == Role.id
-        ).filter(
-            Role.name == 'county'
-        )
-
-    @classmethod
-    def eorc_user_factory(cls):
-        return cls.query.join(
-            Department, User.department_id == Department.id
-        ).filter(
-            db.func.lower(Department.name) == 'equal opportunity review commission'
-        )
-
-    @classmethod
-    def get_subscriber_groups(cls, department_id):
-        return [
-            cls.department_user_factory(department_id).all(),
-            cls.county_purchaser_factory().all(),
-            cls.eorc_user_factory().all()
-        ]
-
-    def get_following(self):
-        '''Generate user contract subscriptions
+    def is_approver(self):
+        '''Check if user can do approvals
 
         Returns:
-            list of ids for contracts followed by user
-        '''
-        return [i.id for i in self.contracts_following]
-
-    def is_conductor(self):
-        '''Check if user can access conductor application
-
-        Returns:
-            True if user's role is either conductor, admin, or superadmin,
+            True if user's role is either approver or admin,
             False otherwise
         '''
-        return self.role.name in ('conductor', 'admin', 'superadmin')
+        return any([
+            self.has_role('approver'),
+            self.has_role('admin'),
+        ])
+
+    def is_admin(self):
+        '''Check if user can access admin applications
+
+        Returns:
+            True if user's role is admin or superadmin, False otherwise
+        '''
+        return any([
+            self.has_role('admin'),
+        ])
 
     def print_pretty_name(self):
         '''Generate long version text representation of user
@@ -157,16 +169,6 @@ class User(UserMixin, SurrogatePK, Model):
             return self.first_name
         else:
             return self.email.split('@')[0]
-
-    @classmethod
-    def conductor_users_query(cls):
-        '''Query users with access to conductor
-
-        Returns:
-            list of users with ``is_conductor`` value of True
-        '''
-        return [i for i in cls.query.all() if i.is_conductor()]
-
 
 class Department(SurrogatePK, Model):
     '''Department model
@@ -229,14 +231,20 @@ class AnonymousUser(AnonymousUserMixin):
         id: Defaults to -1
 
     See Also:
-        ``AnonymousUser`` subclasses the `flask_login anonymous user mixin
+        ``AnonymousUser`` subclasses the `flask_security anonymous user mixin
         <https://flask-login.readthedocs.org/en/latest/#anonymous-users>`_,
         which contains a number of class and instance methods around
         determining if users are currently logged in.
     '''
-    role = Role(name='anonymous')
+    roles = [Role(name='anonymous')]
     department = Department(name='anonymous')
     id = -1
 
     def __init__(self, *args, **kwargs):
         super(AnonymousUser, self).__init__(*args, **kwargs)
+
+    def is_admin(self):
+        return False
+
+    def is_approver(self):
+        return False

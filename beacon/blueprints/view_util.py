@@ -27,7 +27,7 @@ def parse_contact(contact_email, department):
     if contact is None:
         contact = User.create(
             email=contact_email,
-            role=Role.query.filter(Role.name == 'staff').first(),
+            roles=[Role.query.filter(Role.name == 'staff').first()],
             department=department
         )
 

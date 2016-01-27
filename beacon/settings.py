@@ -23,7 +23,7 @@ class Config(object):
     MAIL_PORT = 587
     MAIL_USE_TLS = True
     UPLOAD_S3 = True
-    UPLOAD_DESTINATION = 'pittsburgh-purchasing-opportunities'
+    UPLOAD_DESTINATION = 'beacon-opportunities'
     MAX_CONTENT_LENGTH = int(os_env.get('MAX_CONTENT_LENGTH', 2 * 1024 * 1024))  # max file size, default 2mb
     UPLOAD_FOLDER = os.path.join(HERE, os_env.get('UPLOAD_FOLDER', 'uploads/'))
     S3_BUCKET_NAME = os_env.get('S3_BUCKET_NAME')
@@ -34,6 +34,17 @@ class Config(object):
     SERVER_NAME = os_env.get('BROWSERID_URL')
     DISPLAY_TIMEZONE = pytz.timezone(os_env.get('DISPLAY_TIMEZONE', 'US/Eastern'))
     EXTERNAL_LINK_WARNING = os_env.get('EXTERNAL_LINK_WARNING', None)
+    SECURITY_EMAIL_SENDER = MAIL_DEFAULT_SENDER
+    SECURITY_CONFIRMABLE = True
+    SECURITY_REGISTERABLE = True
+    SECURITY_RECOVERABLE = True
+    SECURITY_TRACKABLE = True
+    SECURITY_CHANGEABLE = True
+    SECURITY_TOKEN_MAX_AGE = 60 * 60 * 24 * 30
+    # more of a namespacing than a traditional salt, see
+    # http://pythonhosted.org/itsdangerous/#the-salt
+    # for more information
+    SECURITY_PASSWORD_SALT = os_env.get('SECURITY_PASSWORD_SALT', 'salty')
 
 class ProdConfig(Config):
     """Production configuration."""
@@ -52,6 +63,7 @@ class ProdConfig(Config):
     CACHE_TYPE = 'redis'
     CACHE_REDIS_URL = os_env.get('REDIS_URL', 'redis://localhost:6379/0')
     CACHE_DEFAULT_TIMEOUT = 30
+    SECURITY_PASSWORD_HASH = 'bcrypt'
 
 class DevConfig(Config):
     """Development configuration."""
@@ -71,7 +83,8 @@ class DevConfig(Config):
     CELERY_ALWAYS_EAGER = True
     UGLIFYJS_BIN = os.path.join(PROJECT_ROOT, 'node_modules', '.bin', 'uglifyjs')
     LESS_BIN = os.path.join(PROJECT_ROOT, 'node_modules', '.bin', 'lessc')
-    MAIL_SUPPRESS_SEND = True
+    # MAIL_SUPPRESS_SEND = True
+    SECURITY_PASSWORD_HASH = 'bcrypt'
 
 class TestConfig(Config):
     TESTING = True
@@ -86,3 +99,4 @@ class TestConfig(Config):
     UPLOAD_FOLDER = UPLOAD_DESTINATION
     CELERY_ALWAYS_EAGER = True
     DISPLAY_TIMEZONE = pytz.timezone('UTC')
+    SECURITY_PASSWORD_SALT = 'test'

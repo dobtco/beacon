@@ -82,9 +82,9 @@ class TestOpportunityModel(TestCase):
         self.assertTrue(closed_opportunity_today_deadline.is_submission_end)
 
     def test_can_edit_not_public(self):
-        staff = UserFactory.build(role=RoleFactory.build(name='staff'))
-        creator = UserFactory.build(role=RoleFactory.build(name='staff'))
-        admin = UserFactory.build(role=RoleFactory.build(name='admin'))
+        staff = UserFactory.build(roles=[RoleFactory.build(name='staff')])
+        creator = UserFactory.build(roles=[RoleFactory.build(name='staff')])
+        admin = UserFactory.build(roles=[RoleFactory.build(name='admin')])
         opportunity = OpportunityFactory.build(
             is_public=False, planned_publish=self.yesterday,
             planned_submission_start=self.today, planned_submission_end=self.tomorrow,
@@ -96,9 +96,9 @@ class TestOpportunityModel(TestCase):
         self.assertTrue(opportunity.can_edit(admin))
 
     def test_can_edit_is_public(self):
-        staff = UserFactory.build(role=RoleFactory.build(name='staff'))
-        creator = UserFactory.build(role=RoleFactory.build(name='staff'))
-        admin = UserFactory.build(role=RoleFactory.build(name='admin'))
+        staff = UserFactory.build(roles=[RoleFactory.build(name='staff')])
+        creator = UserFactory.build(roles=[RoleFactory.build(name='staff')])
+        admin = UserFactory.build(roles=[RoleFactory.build(name='admin')])
         opportunity = OpportunityFactory.build(
             is_public=True, planned_publish=self.yesterday,
             planned_submission_start=self.today, planned_submission_end=self.tomorrow,

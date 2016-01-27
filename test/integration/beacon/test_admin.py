@@ -74,6 +74,24 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
 
         self.assertTrue('1 more' in new_opp_req.data)
 
+    def test_build_opportunity_new_user_invalid_domain(self):
+        self.login_user(self.admin)
+        data = {
+            'department': str(self.department1.id),
+            'contact_email': 'new_email@invalid.com',
+            'title': 'test', 'description': 'test',
+            'planned_publish': datetime.date.today(),
+            'planned_submission_start': datetime.date.today(),
+            'planned_submission_end': datetime.date.today() + datetime.timedelta(5),
+            'is_public': False, 'subcategories-{}'.format(Category.query.first().id): 'on',
+            'opportunity_type': self.opportunity_type.id
+        }
+
+        # assert that we create a new user when we build with a new email
+        self.assertEquals(User.query.count(), 2)
+        self.client.post('/beacon/admin/opportunities/new', data=data)
+        self.assertEquals(User.query.count(), 2)
+
     def test_build_opportunity_new_user(self):
         self.login_user(self.admin)
         data = {
@@ -95,7 +113,7 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
     def test_create_an_opportunity(self):
         self.assertEquals(Opportunity.query.count(), 4)
         self.assertEquals(self.client.get('/beacon/admin/opportunities/new').status_code, 302)
-        self.assert_flashes('This feature is for city staff only. If you are staff, log in with your pittsburghpa.gov email using the link to the upper right.', 'alert-warning')
+        self.assert_flashes('You do not have sufficent permissions to do that! If you are staff, make sure you are logged in using the link to the upper right.', 'alert-warning')
 
         self.login_user(self.admin)
         self.assert200(self.client.get('/beacon/admin/opportunities/new'))
@@ -150,7 +168,7 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
         self.assertEquals(self.client.get('/beacon/admin/opportunities/{}'.format(
             self.opportunity2.id
         )).status_code, 302)
-        self.assert_flashes('This feature is for city staff only. If you are staff, log in with your pittsburghpa.gov email using the link to the upper right.', 'alert-warning')
+        self.assert_flashes('You do not have sufficent permissions to do that! If you are staff, make sure you are logged in using the link to the upper right.', 'alert-warning')
 
         self.login_user(self.admin)
         self.assert200(self.client.get('/beacon/admin/opportunities/{}'.format(
@@ -187,7 +205,7 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
         opp_doc = OpportunityDocument.query.filter(OpportunityDocument.name == 'the_test_document').first()
         self.client.get('/beacon/admin/opportunities/{}/document/{}/remove'.format(opp.id, opp_doc.id))
         self.assertEquals(len(opp.opportunity_documents.all()), 1)
-        self.assert_flashes('This feature is for city staff only. If you are staff, log in with your pittsburghpa.gov email using the link to the upper right.', 'alert-warning')
+        self.assert_flashes('You do not have sufficent permissions to do that! If you are staff, make sure you are logged in using the link to the upper right.', 'alert-warning')
 
         self.login_user(self.admin)
 
@@ -207,7 +225,7 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
     def test_signup_download(self):
         request = self.client.get('/beacon/admin/signups')
         self.assertEquals(request.status_code, 302)
-        self.assert_flashes('This feature is for city staff only. If you are staff, log in with your pittsburghpa.gov email using the link to the upper right.', 'alert-warning')
+        self.assert_flashes('You do not have sufficent permissions to do that! If you are staff, make sure you are logged in using the link to the upper right.', 'alert-warning')
 
     def test_signup_download_staff(self):
         # insert some vendors
@@ -257,7 +275,7 @@ class TestOpportunityPublic(TestOpportunitiesAdminBase):
                 'email': 'foo@foo.com', 'business_name': 'foo',
                 'opportunity': str(self.opportunity3.id),
             })
-            self.assertEquals(len(Vendor.query.get(1).opportunities), 0)
+            self.assertEquals(len(Vendor.query.get(self.vendor.id).opportunities), 0)
             self.assertTrue('not a valid choice.' in bad_contract.data)
             self.assertEquals(len(outbox), 0)
 
@@ -268,7 +286,7 @@ class TestOpportunityPublic(TestOpportunitiesAdminBase):
         self.assertEquals(self.client.get('/beacon/admin/opportunities/pending').status_code, 302)
         random_publish = self.client.get('/beacon/admin/opportunities/{}/publish'.format(self.opportunity3.id))
         self.assertEquals(random_publish.status_code, 302)
-        self.assert_flashes('This feature is for city staff only. If you are staff, log in with your pittsburghpa.gov email using the link to the upper right.', 'alert-warning')
+        self.assert_flashes('You do not have sufficent permissions to do that! If you are staff, make sure you are logged in using the link to the upper right.', 'alert-warning')
         self.assertFalse(self.opportunity3.is_public)
 
     def test_pending_opportunity_staff(self):
@@ -280,7 +298,7 @@ class TestOpportunityPublic(TestOpportunitiesAdminBase):
         self.assertTrue('Publish' not in staff_pending.data)
         # make sure staff can't publish somehow
         staff_publish = self.client.get('/beacon/admin/opportunities/{}/publish'.format(self.opportunity3.id))
-        self.assert_flashes('You do not have sufficent permissions to do that!', 'alert-danger')
+        self.assert_flashes('You do not have sufficent permissions to do that! If you are staff, make sure you are logged in using the link to the upper right.', 'alert-warning')
         self.assertEquals(staff_publish.status_code, 302)
         self.assertFalse(self.opportunity3.is_public)
 
@@ -291,6 +309,7 @@ class TestOpportunityPublic(TestOpportunitiesAdminBase):
         self.assert200(admin_pending)
         self.assertEquals(len(self.get_context_variable('pending')), 1)
         self.assertTrue('Publish' in admin_pending.data)
+
         with mail.record_messages() as outbox:
             admin_publish = self.client.get('/beacon/admin/opportunities/{}/publish'.format(
                 self.opportunity3.id

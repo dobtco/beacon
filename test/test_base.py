@@ -2,7 +2,6 @@
 
 import os
 
-from mock import Mock, patch
 from flask.ext.testing import TestCase as FlaskTestCase
 
 from beacon.app import create_app as _create_app, db
@@ -66,16 +65,13 @@ class BaseTestCase(FlaskTestCase):
             assert expected_message in messages
             assert expected_category in categories
 
-    @patch('urllib2.urlopen')
-    def login_user(self, user, urlopen):
-        _email = user.email if user else 'foo@foo.com'
-        mock_open = Mock()
-        mock_open.read.side_effect = ['{"status": "okay", "email": "' + _email + '"}']
-        urlopen.return_value = mock_open
-
-        self.client.post('/users/auth', data=dict(
-            assertion='test'
+    def login_user(self, user):
+        self.logout_user()
+        return self.client.post('/login', data=dict(
+            email=user.email,
+            password=user.password,
+            remember='y'
         ))
 
     def logout_user(self):
-        self.client.post('/users/logout')
+        self.client.get('/logout')

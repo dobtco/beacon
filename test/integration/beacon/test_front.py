@@ -19,7 +19,7 @@ class TestOpportunities(TestOpportunitiesFrontBase):
     def test_templates(self):
         # insert our opportunity, users
         admin_role = RoleFactory.create(name='admin')
-        admin = UserFactory.create(role=admin_role)
+        admin = UserFactory.create(roles=[admin_role])
 
         opportunity = OpportunityFactory.create(
             contact=admin, created_by=admin,
@@ -60,8 +60,8 @@ class TestOpportunities(TestOpportunitiesFrontBase):
         admin_role = RoleFactory.create(name='admin')
         superadmin_role = RoleFactory.create(name='superadmin')
 
-        UserFactory.create(role=admin_role)
-        UserFactory.create(email='foo2@foo.com', role=superadmin_role)
+        UserFactory.create(roles=[admin_role])
+        UserFactory.create(email='foo2@foo.com', roles=[superadmin_role])
 
         response = self.client.get('/signup')
         self.assert200(response)

@@ -6,12 +6,9 @@ from flask import (
     render_template, url_for, Response, stream_with_context,
     redirect, flash, abort, request, current_app, Blueprint
 )
-from flask_login import current_user
+from flask_security import current_user, roles_accepted
 
 from beacon.database import db
-from beacon.extensions import login_manager
-from beacon.decorators import requires_roles
-from beacon.models.users import User
 
 from beacon.models.opportunities import Opportunity, Vendor, OpportunityDocument
 from beacon.forms.opportunities import OpportunityForm
@@ -23,12 +20,8 @@ blueprint = Blueprint(
     static_folder='../static', template_folder='../templates'
 )
 
-@login_manager.user_loader
-def load_user(userid):
-    return User.get_by_id(int(userid))
-
 @blueprint.route('/opportunities/new', methods=['GET', 'POST'])
-@requires_roles('staff', 'admin', 'superadmin', 'conductor')
+@roles_accepted('staff', 'approver', 'admin')
 def new():
     '''Create a new opportunity
 
@@ -62,7 +55,7 @@ def new():
     )
 
 @blueprint.route('/opportunities/<int:opportunity_id>', methods=['GET', 'POST'])
-@requires_roles('staff', 'admin', 'superadmin', 'conductor')
+@roles_accepted('staff', 'approver', 'admin')
 def edit(opportunity_id):
     '''Edit an opportunity
 
@@ -105,7 +98,7 @@ def edit(opportunity_id):
     abort(404)
 
 @blueprint.route('/opportunities/<int:opportunity_id>/document/<int:document_id>/remove')
-@requires_roles('staff', 'admin', 'superadmin', 'conductor')
+@roles_accepted('staff', 'approver', 'admin')
 def remove_document(opportunity_id, document_id):
     '''Remove a particular opportunity document
 
@@ -134,7 +127,7 @@ def remove_document(opportunity_id, document_id):
     return redirect(url_for('beacon_admin.edit', opportunity_id=opportunity_id))
 
 @blueprint.route('/opportunities/<int:opportunity_id>/publish')
-@requires_roles('admin', 'superadmin', 'conductor')
+@roles_accepted('approver', 'admin')
 def publish(opportunity_id):
     '''Publish an opportunity
 
@@ -154,20 +147,22 @@ def publish(opportunity_id):
     ).first()
 
     if opportunity:
-        flash('Opportunity successfully published!', 'alert-success')
-        opportunity.is_public = True
-        db.session.flush()
+        to_email = opportunity.created_by.email
 
-        opportunity.send_publish_email()
+        opportunity.is_public = True
         db.session.commit()
 
+        opportunity.send_publish_email()
+
         Notification(
-            to_email=[opportunity.created_by.email],
+            to_email=[to_email],
             subject='OMB approved your opportunity post!',
             html_template='beacon/emails/staff_postapproved.html',
             txt_template='beacon/emails/staff_postapproved.txt',
             opportunity=opportunity
         ).send(multi=True)
+
+        db.session.commit()
 
         current_app.logger.info(
             '''BEACON APPROVED: ID: {} | Title: {} | Publish Date: {} | Submission Start Date: {} | Submission End Date: {} '''.format(
@@ -176,11 +171,12 @@ def publish(opportunity_id):
             )
         )
 
+        flash('Opportunity successfully published!', 'alert-success')
         return redirect(url_for('beacon_admin.pending'))
     abort(404)
 
 @blueprint.route('/opportunities/pending')
-@requires_roles('staff', 'admin', 'superadmin', 'conductor')
+@roles_accepted('staff', 'approver', 'admin')
 def pending():
     '''View which contracts are currently pending approval
 
@@ -207,7 +203,7 @@ def pending():
     )
 
 @blueprint.route('/opportunities/<int:opportunity_id>/archive')
-@requires_roles('admin', 'superadmin', 'conductor')
+@roles_accepted('approver', 'admin')
 def archive(opportunity_id):
     '''Archives opportunities in pending view
 
@@ -235,7 +231,7 @@ def archive(opportunity_id):
     abort(404)
 
 @blueprint.route('/signups')
-@requires_roles('staff', 'admin', 'superadmin', 'conductor')
+@roles_accepted('staff', 'approver', 'admin')
 def signups():
     '''Basic dashboard view for category-level signups
 
