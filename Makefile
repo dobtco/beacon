@@ -6,6 +6,7 @@ install:
 setup:
 	make install
 	python manage.py db upgrade
+	python manage.py create_domain -d $(DEFAULT_DOMAIN)
 	python manage.py seed_user -e $(ADMIN_EMAIL) -r 1
 	python manage.py seed
 

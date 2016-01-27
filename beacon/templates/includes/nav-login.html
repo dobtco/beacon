@@ -1,7 +1,7 @@
 {% block dropdown %}
 
+{% if not current_user.is_anonymous %}
 <li class="dropdown">
-  {% if not current_user.is_anonymous %}
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">City staff menu<span class="caret"></span></a>
   <span class="sr-only">Toggle Dropdown</span>
   </a>
@@ -12,11 +12,9 @@
     <li><a class="navbar-link" href="{{ url_for('users.profile') }}">Profile</a></li>
     <li><a class="navbar-link" href="{{ url_for('security.logout') }}"><i class="fa fa-sign-out"></i> Sign out</a></li>
   </ul>
-  {% else %}
-  <ul>
-    <li><a href="{{ url_for('security.login') }}" class="navbar-link js-signin">City staff login</a></li>
-  </ul>
-  {% endif %}
 </li>
+{% else %}
+<li><a href="{{ url_for('security.login') }}" class="navbar-link js-signin">City staff login</a></li>
+{% endif %}
 
 {% endblock %}

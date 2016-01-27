@@ -8,10 +8,10 @@ from flask_migrate import MigrateCommand
 from flask.ext.assets import ManageAssets
 
 from beacon.app import create_app
-from beacon.database import db
+from beacon.database import db, get_or_create
 from beacon.utils import connect_to_s3, upload_file
 
-from beacon.models.public import AppStatus
+from beacon.models.public import AppStatus, AcceptedEmailDomains
 from beacon import jobs as nightly_jobs
 
 app = create_app()
@@ -52,12 +52,21 @@ def seed_user(email, role, dept, password):
                 created_at=datetime.datetime.utcnow(),
                 department=department if department else None,
                 password=password,
-                roles=[Role.query.get(int(role))]
+                roles=[Role.query.get(int(role))],
+                confirmed_at=datetime.datetime.now()
             )
             db.session.commit()
             print 'User {email} successfully created!'.format(email=seed_email)
         except Exception, e:
             print 'Something went wrong: {exception}'.format(exception=e.message)
+    return
+
+@manager.option('-d', '--domain', dest='domain')
+def create_domain(domain):
+    print 'Creating domain {}'.format(domain)
+    get_or_create(db.session, model=AcceptedEmailDomains, domain=domain)
+    db.session.commit()
+    print 'Done'
     return
 
 @manager.option(
@@ -167,16 +176,10 @@ def all_clear():
     print 'All clear!'
     return
 
-@manager.option('-r', '--s3user', dest='user')
-@manager.option('-p', '--s3secret', dest='secret')
-@manager.option('-t', '--s3bucket', dest='bucket')
 @manager.command
 def seed(user=None, secret=None, bucket=None):
     '''Seeds a test/dev instance with new data
     '''
-    user = user if user else os.environ.get('AWS_ACCESS_KEY_ID')
-    secret = secret if secret else os.environ.get('AWS_SECRET_ACCESS_KEY')
-    bucket = bucket if bucket else os.environ.get('S3_BUCKET_NAME')
     # import seed nigp
     import_nigp('./beacon/importer/seed/2015-07-01-seed-nigp-cleaned.csv')
     print ''

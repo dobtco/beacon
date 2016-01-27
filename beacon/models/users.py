@@ -46,6 +46,15 @@ class Role(RoleMixin, SurrogatePK, Model):
         '''
         return cls.query.filter(cls.name != 'superadmin')
 
+    @classmethod
+    def staff_factory(cls):
+        '''Factory to return the staff role
+
+        Returns:
+            Role object with the name 'staff'
+        '''
+        return cls.query.filter(cls.name == 'staff')
+
 class User(UserMixin, SurrogatePK, Model):
     '''User model
 
@@ -227,7 +236,7 @@ class AnonymousUser(AnonymousUserMixin):
         which contains a number of class and instance methods around
         determining if users are currently logged in.
     '''
-    role = Role(name='anonymous')
+    roles = [Role(name='anonymous')]
     department = Department(name='anonymous')
     id = -1
 

@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from beacon.extensions import admin, db
-
-from beacon.decorators import AuthMixin
+from beacon.extensions import admin, db, AuthMixin
 
 from beacon.models.opportunities import RequiredBidDocument
 from beacon.models.users import User, Department
+from beacon.models.public import AcceptedEmailDomains
 
 from flask_admin.contrib import sqla
 
@@ -36,13 +35,20 @@ class UserAdmin(AuthMixin, BaseModelViewAdmin):
         ),
     }
 
+class AcceptedEmailDomainsAdmin(AuthMixin, BaseModelViewAdmin):
+    pass
+
 admin.add_view(DocumentAdmin(
-    RequiredBidDocument, db.session, name='Bid Document', endpoint='bid_document'
+    RequiredBidDocument, db.session, name='Bid Document', endpoint='bid-document'
 ))
 
 admin.add_view(UserAdmin(
     User, db.session, name='User', endpoint='user', category='Users'
 ))
 admin.add_view(DocumentAdmin(
-    Department, db.session, name='Department', endpoint='departments', category='Users'
+    Department, db.session, name='Department', endpoint='department', category='Users'
+))
+admin.add_view(AcceptedEmailDomainsAdmin(
+    AcceptedEmailDomains, db.session, name='Accepted Domains',
+    endpoint='accepted-email-domain', category='Users'
 ))

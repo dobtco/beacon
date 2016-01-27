@@ -35,7 +35,9 @@
 {% block body %}
 
 {% with form=form %}
-{% block nav %}{% endblock %}
+{% block nav %}
+{% include "includes/nav.html" %}
+{% endblock %}
 {% endwith %}
 
 <header>{% block header %}{% endblock %}</header>

@@ -31,7 +31,7 @@ Flask-S3==0.1.7
 # Auth
 Flask-Security==1.7.5
 Flask-Login==0.3.2
-Flask-Bcrypt==0.6.2
+bcrypt==2.0.0
 
 # Caching
 Flask-Cache>=0.13.1

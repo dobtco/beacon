@@ -372,10 +372,10 @@ class Opportunity(Model):
             contact can all edit the opportunity before it is published. After
             it is published, only conductors can edit it.
         '''
-        if self.is_public and user.role.name in ('conductor', 'admin', 'superadmin'):
+        if self.is_public and user.is_approver():
             return True
         elif not self.is_public and \
-            (user.role.name in ('conductor', 'admin', 'superadmin') or
+            (user.is_approver() or
                 user.id in (self.created_by_id, self.contact_id)):
                 return True
         return False

@@ -4,8 +4,8 @@ import re
 
 from flask_wtf import Form
 from flask_security import RegisterForm
-from wtforms.fields import TextField, HiddenField
-from wtforms.ext.sqlalchemy.fields import QuerySelectField
+from wtforms.fields import TextField
+from wtforms.ext.sqlalchemy.fields import QuerySelectField, QuerySelectMultipleField
 from beacon.models.users import Department, Role
 from beacon.models.public import AcceptedEmailDomains
 
@@ -35,7 +35,11 @@ class ExtendedRegisterForm(RegisterForm):
     Attributes:
         pass
     '''
-    roles = HiddenField()
+    roles = QuerySelectMultipleField(
+        query_factory=Role.staff_factory,
+        get_pk=lambda i: i.id,
+        get_label=lambda i: i.name
+    )
 
     def __init__(self, *args, **kwargs):
         super(ExtendedRegisterForm, self).__init__(*args, **kwargs)
