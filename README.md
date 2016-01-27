@@ -1,5 +1,7 @@
 # Beacon Standalone
 
+[![Circle CI](https://circleci.com/gh/dobtco/beacon.svg?style=shield&circle-token=33da8bd876a2490ae1ad74337251100b491eac36)](https://circleci.com/gh/dobtco/beacon)
+
 ## What is it?
 
 Beacon is one of the apps originally developed as part of the [Pittsburgh Purchasing Suite](https://github.com/codeforamerica/pittsburgh-purchasing-suite). Beacon specifically allows users to advertise contract opportunities. You can read about Beacon and our other work in the [Team Pittsburgh End of Year Report](https://docs.google.com/presentation/d/1Rw_nMTUQTbFxnq9x-uQIPGC0IdnwdWPB2yHVAY1mG0g/edit?usp=sharing) and [User Guide](https://docs.google.com/document/d/1z2ujIVJ0pa0lN9rO_1W3MrLTUe_smpwrWyXpWZEVp4Q/export?format=pdf)
