@@ -1,0 +1,12 @@
+machine:
+  environment:
+    CONFIG: beacon.settings.TestConfig
+
+dependencies:
+  post:
+    - pip install -r requirements/dev.txt
+
+test:
+  override:
+    - psql -c 'create database beacon_test;' -U postgres
+    - PYTHONPATH=. nosetests test/ -v --with-coverage --cover-package=beacon --cover-erase
