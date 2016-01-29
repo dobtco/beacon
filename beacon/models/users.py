@@ -44,7 +44,7 @@ class Role(RoleMixin, SurrogatePK, Model):
         Returns:
             `sqla query`_ of roles without administrative access
         '''
-        return cls.query.filter(cls.name != 'superadmin')
+        return cls.query.filter(cls.name != 'admin')
 
     @classmethod
     def staff_factory(cls):
@@ -182,6 +182,12 @@ class Department(SurrogatePK, Model):
 
     def __unicode__(self):
         return self.name
+
+    @classmethod
+    def query_factory_all(cls):
+        '''Generate a department query factory with all departments.
+        '''
+        return cls.query
 
     @classmethod
     def query_factory(cls):

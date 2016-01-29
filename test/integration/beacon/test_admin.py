@@ -13,9 +13,12 @@ from beacon.database import db
 from beacon.extensions import mail
 from beacon.models.users import User
 from beacon.models.opportunities import Opportunity, Vendor, Category, OpportunityDocument
+from beacon.models.questions import Question
 from beacon.forms.opportunities import OpportunityDocumentForm
 
-from test.factories import OpportunityDocumentFactory, VendorFactory
+from test.factories import (
+    OpportunityDocumentFactory, VendorFactory, QuestionFactory
+)
 
 from test.integration.beacon.test_base import TestOpportunitiesAdminBase
 
@@ -399,7 +402,7 @@ class TestOpportunityPublic(TestOpportunitiesAdminBase):
             # should send to the single vendor signed up to receive info
             # about that category
             self.assertEquals(len(outbox), 1)
-            self.assertEquals(outbox[0].subject, '[Pittsburgh Purchasing] A new City of Pittsburgh opportunity from Beacon!')
+            self.assertEquals(outbox[0].subject, '[Beacon] A new opportunity from Beacon!')
 
     def test_update_and_publish_opportunity_as_admin(self):
         data = {
@@ -429,7 +432,7 @@ class TestOpportunityPublic(TestOpportunitiesAdminBase):
             )
             # sends the opportunity when updated with the proper save type
             self.assertEquals(len(outbox), 1)
-            self.assertEquals(outbox[0].subject, '[Pittsburgh Purchasing] A new City of Pittsburgh opportunity from Beacon!')
+            self.assertEquals(outbox[0].subject, '[Beacon] A new opportunity from Beacon!')
 
     def test_archive_an_opportunity(self):
         data = {
@@ -454,7 +457,6 @@ class TestOpportunityPublic(TestOpportunitiesAdminBase):
         )
         self.assertEquals(Opportunity.query.filter(Opportunity.is_archived == True).count(), 1)
 
-
 class TestExpiredOpportunities(TestOpportunitiesAdminBase):
     def test_expired_opportunity(self):
 
@@ -462,3 +464,68 @@ class TestExpiredOpportunities(TestOpportunitiesAdminBase):
 
         self.assert200(self.client.get('/opportunities/expired'))
         self.assertEquals(len(self.get_context_variable('expired')), 1)
+
+class TestOpportunityQuestions(TestOpportunitiesAdminBase):
+    render_templates = True
+
+    def setUp(self):
+        self.asker = VendorFactory.create(email='biz@mybiz.biz')
+        super(TestOpportunityQuestions, self).setUp()
+        self.q1 = QuestionFactory.create(opportunity=self.opportunity3, asked_by=self.asker)
+        QuestionFactory.create(answer_text='an answer', opportunity=self.opportunity3)
+        self.opportunity3.created_by = self.staff
+        self.opportunity3.save()
+        self.answer_url = '/beacon/admin/opportunities/{}/questions/{}'.format(self.opportunity3.id, self.q1.id)
+
+    def test_browse_questions(self):
+        self.assertEquals(
+            self.client.get('/beacon/admin/opportunities/10000/questions').status_code,
+            302
+        )
+        self.login_user(self.admin)
+        self.assert404(self.client.get('/beacon/admin/opportunities/10000/questions'))
+        self.client.get('/beacon/admin/opportunities/{}/questions'.format(self.opportunity3.id))
+        self.assertEquals(len(self.get_context_variable('answered')), 1)
+        self.assertEquals(len(self.get_context_variable('unanswered')), 1)
+
+    def test_answer_questions(self):
+        self.login_user(self.admin)
+        self.assert200(self.client.get(self.answer_url))
+        with mail.record_messages() as outbox:
+            self.client.post(
+                self.answer_url, data=dict(
+                    answer_text='ANSWER TO YOUR QUESTION'
+                )
+            )
+            self.client.get('/beacon/admin/opportunities/{}/questions'.format(self.opportunity3.id))
+            self.assertEquals(len(self.get_context_variable('answered')), 2)
+            self.assertEquals(Question.query.get(self.q1.id).answered_by, self.admin)
+
+            # should send 2 mails -- 1 to the other opportunity person, 1 to vendor
+            self.assertEquals(len(outbox), 2)
+            sent_to = []
+            for i in outbox:
+                sent_to.extend(list(i.send_to))
+            self.assertIn('biz@mybiz.biz', sent_to)
+            self.assertNotIn(self.admin.email, sent_to)
+            self.assertTrue('ANSWER TO YOUR QUESTION' in outbox[0].body)
+            self.assertTrue('New answer to a questio on Beacon' in outbox[0].subject)
+
+    def test_edit_questions(self):
+        self.q1.answer_text = 'an answer'
+        self.q1.save()
+        self.login_user(self.admin)
+        questions = self.client.get('/beacon/admin/opportunities/{}/questions'.format(self.opportunity3.id))
+        self.assertTrue('Edited on' not in questions.data)
+        self.assertTrue('No unanswered questions' in questions.data)
+
+        with mail.record_messages() as outbox:
+            self.client.post(
+                self.answer_url, data=dict(answer_text='new answer')
+            )
+            self.assertEquals(len(outbox), 0)
+
+        new_questions = self.client.get('/beacon/admin/opportunities/{}/questions'.format(self.opportunity3.id))
+        self.assertEquals(len(self.get_context_variable('answered')), 2)
+        self.assertTrue('Edited on' in new_questions.data)
+        self.assertTrue('No unanswered questions' in new_questions.data)

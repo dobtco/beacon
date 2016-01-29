@@ -240,7 +240,8 @@ def upgrade():
     ])
 
     op.bulk_insert(department, [
-        {'name': 'Other'}
+        {'name': 'Other'},
+        {'name': 'New User'}
     ])
 
     op.bulk_insert(opportunity_type, [

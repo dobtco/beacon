@@ -1,0 +1,33 @@
+{% extends "beacon/layout.html" %}
+{% import "macros/_renderers.html" as macros %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+
+      {% include "includes/flashes.html" %}
+
+      {{ macros.render_opportunity_nav(question.opportunity, 'questions') }}
+
+      <div class="row">
+        <div class="col-sm-12">
+          <h4>Question:</h4>
+          <p>{{ question.question_text|newline_to_br }}</p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-sm-12">
+          <form class="form" method="POST" action="{{ url_for('beacon_admin.answer_question', opportunity_id=opportunity_id, question_id=question.id) }}">
+            {{ form.csrf_token() }}
+            {{ macros.render_form_field_with_errors(form.answer_text, class_="form-control", rows="5", required="true")}}
+            {{ form.submit(class_="btn btn-primary") }}
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

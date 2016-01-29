@@ -60,7 +60,7 @@ class TestBeaconJobs(BaseTestCase):
             self.assertEquals(len(outbox), 2)
             self.assertEquals(
                 outbox[0].subject,
-                '[Pittsburgh Purchasing] A new City of Pittsburgh opportunity from Beacon!'
+                '[Beacon] A new opportunity from Beacon!'
             )
             self.assertTrue(Opportunity.query.get(opportunity_id).publish_notification_sent)
 

@@ -103,13 +103,18 @@ def localize_datetime(date):
 def localize_and_strip(date):
     '''Take a naive (UTC) datetime object, normalize it to the display timezone, and remove tzinfo
     '''
-    return pytz.UTC.localize(date).astimezone(current_app.config['DISPLAY_TIMEZONE']).replace(tzinfo=None)
+    if date:
+        return localize_datetime(date).replace(tzinfo=None)
+    return ''
 
 class RequiredIf(InputRequired):
-    # a validator which makes a field required if
-    # another field is set and has a truthy value
-    # http://stackoverflow.com/questions/8463209/how-to-make-a-field-conditionally-optional-in-wtforms
-    # thanks to Team RVA for pointing this out
+    '''Makes a field required if another field is set with a truthy value
+
+    See Also:
+        http://stackoverflow.com/questions/8463209/how-to-make-a-field-conditionally-optional-in-wtforms
+
+    Thanks to Team RVA for help with this
+    '''
 
     def __init__(self, other_field_name, *args, **kwargs):
         self.other_field_name = other_field_name
@@ -127,3 +132,65 @@ class RequiredIf(InputRequired):
                 'You filled out "%s" but left this blank -- please fill this out as well.' %
                 other_field.label.text if other_field.label else self.other_field_name
             )
+
+class RequiredDateAfter(object):
+    '''Make a field occur after another (passed) field.
+    '''
+    def __init__(self, other_field_name, *args, **kwargs):
+        self.other_field_name = other_field_name
+
+    def __call__(self, form, field):
+        other_field = form._fields.get(self.other_field_name)
+        if other_field is None:
+            raise Exception(
+                'no field named "%s" in form' %
+                other_field.label.text if other_field.label else self.other_field_name
+            )
+        if isinstance(other_field.data, datetime.datetime):
+            other_field_data = other_field.data.date()
+        else:
+            other_field_data = other_field.data
+
+        if isinstance(field.data, datetime.datetime):
+            field_data = field.data.date()
+        else:
+            field_data = field.data
+
+        if field_data and other_field_data:
+            if not field_data > other_field_data:
+                raise StopValidation(
+                    '{} must be set after {}!'.format(
+                        field.label.text, other_field.label.text
+                    )
+                )
+
+class RequiredDateBefore(object):
+    '''Make a field occur after another (passed) field.
+    '''
+    def __init__(self, other_field_name, *args, **kwargs):
+        self.other_field_name = other_field_name
+
+    def __call__(self, form, field):
+        other_field = form._fields.get(self.other_field_name)
+        if other_field is None:
+            raise Exception(
+                'no field named "%s" in form' %
+                other_field.label.text if other_field.label else self.other_field_name
+            )
+        if isinstance(other_field.data, datetime.datetime):
+            other_field_data = other_field.data.date()
+        else:
+            other_field_data = other_field.data
+
+        if isinstance(field.data, datetime.datetime):
+            field_data = field.data.date()
+        else:
+            field_data = field.data
+
+        if field_data and other_field_data:
+            if not field_data <= other_field_data:
+                raise StopValidation(
+                    '{} must be set before {}!'.format(
+                        field.label.text, other_field.label.text
+                    )
+                )

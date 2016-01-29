@@ -1,43 +1,43 @@
 {% extends "users/layout.html" %}
-{% import "macros/with_errors.html" as macros %}
+{% import "macros/_renderers.html" as macros %}
 
 {% block content %}
 <div class="container">
   <div class="row">
     <div class="col-sm-6 col-sm-offset-3">
 
-  {{ super() }}
+      {% include "includes/flashes.html" %}
 
-  {% if user.department.name == 'New User' %}
-    Welcome to Beacon! Please update your information from the list below. You must select your department.
-  {% endif %}
-
-  <h4>Your Profile</h4>
-
-    <form class="form" action="{{ url_for('users.profile') }}" method="POST">
-      {{ form.csrf_token }}
-      <div class="form-group">
-        <label for="first_name" class="control-label">First Name:</label>
-        {{ macros.with_errors(form.first_name, class_="form-control", placeholder="First Name") }}
-      </div>
-      <div class="form-group">
-        <label for="first_name" class="control-label">Last Name:</label>
-        {{ macros.with_errors(form.last_name, class_="form-control", placeholder="Last Name") }}
-      </div>
-      <div class="form-group">
-        <label for="department" class="control-label">Update your Department: <span class="form-required">*</span></label>
-        {{ macros.with_errors(form.department, class_='form-control') }}
-      </div>
-      {% if security.changeable %}
-      <div class="list-unstyled">
-        <li><a href="{{ url_for_security('change_password') }}">Change my password</a></li>
-      </div>
-      <div class="spacer-10"></div>
+      {% if user.department.name == 'New User' %}
+        Welcome to Beacon! Please update your information from the list below. You must select your department.
       {% endif %}
-      <div class="input-no-left-padding-tablet">
-        <button type="submit" class="btn btn-success">Submit</button>
-      </div>
-    </form>
+
+      <h4>Your Profile</h4>
+
+      <form class="form" action="{{ url_for('users.profile') }}" method="POST">
+        {{ form.csrf_token }}
+        <div class="form-group">
+          <label for="first_name" class="control-label">First Name:</label>
+          {{ macros.with_errors(form.first_name, class_="form-control", placeholder="First Name") }}
+        </div>
+        <div class="form-group">
+          <label for="first_name" class="control-label">Last Name:</label>
+          {{ macros.with_errors(form.last_name, class_="form-control", placeholder="Last Name") }}
+        </div>
+        <div class="form-group">
+          <label for="department" class="control-label">Update your Department: <span class="form-required">*</span></label>
+          {{ macros.with_errors(form.department, class_='form-control') }}
+        </div>
+        {% if security.changeable %}
+        <div class="list-unstyled">
+          <li><a href="{{ url_for_security('change_password') }}">Change my password</a></li>
+        </div>
+        <div class="spacer-10"></div>
+        {% endif %}
+        <div class="input-no-left-padding-tablet">
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
     </div>
 
   </div>

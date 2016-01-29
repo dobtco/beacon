@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from beacon.app import celery
-from beacon.extensions import mail, db, cache
+from beacon.extensions import mail
 
 @celery.task
 def send_email(messages):

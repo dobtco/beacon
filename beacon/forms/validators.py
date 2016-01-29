@@ -3,7 +3,9 @@
 import re
 import datetime
 
+from flask import url_for
 from wtforms.validators import ValidationError
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from beacon.models.opportunities import Vendor
 from beacon.models.users import User
@@ -30,6 +32,14 @@ def city_domain_email(form, field):
             domain_text = domain.group().lstrip('@')
             if not all([domain, AcceptedEmailDomains.valid_domain(domain_text)]):
                 raise ValidationError("That's not a valid contact!")
+
+def registered_vendor_email(form, field):
+    if field.data:
+        try:
+            Vendor.query.filter(Vendor.email == field.data).one()
+        except (NoResultFound, MultipleResultsFound):
+            raise ValidationError('You need to sign up to ask a question!')
+        return True
 
 def max_words(_max=500):
     '''Checks that a text-area field has fewer than the allowed number of words.

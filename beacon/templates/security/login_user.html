@@ -1,6 +1,6 @@
 {% extends "security/base.html" %}
 {% from "security/_macros.html" import render_field %}
-{% import "macros/with_errors.html" as macros %}
+{% import "macros/_renderers.html" as macros %}
 
 {% block form %}
 
@@ -13,15 +13,11 @@
 
   {{ macros.render_form_field_with_errors(login_user_form.password, class_="form-control", required="true") }}
 
-  <div class="checkbox">
-    <label>
-      {{ macros.with_errors(login_user_form.remember, class_="form-checkbox") }} Remember Me
-    </label>
-  </div>
+  {{ macros.render_checkbox_field(login_user_form.remember, class_="form-checkbox", label_text="Remember Me")}}
 
   {{ render_field(login_user_form.next) }}
 
-  {{ render_field(login_user_form.submit, class_="btn btn-success") }}
+  {{ render_field(login_user_form.submit, class_="btn btn-primary") }}
 </form>
 
 {% include "security/_menu.html" %}

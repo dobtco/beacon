@@ -1,0 +1,31 @@
+{% import "macros/_renderers.html" as macros %}
+
+<div class="row">
+
+  {% if questions|length > 0 %}
+    <h3><strong>Questions</strong></h3>
+    <div class="spacer-10"></div>
+    <ul class="list-unstyled">
+      {% for question in questions %}
+        <blockquote class="beacon-question">{{ question.question_text|newline_to_br }}</blockquote>
+        <span>{{ question.answer_text|newline_to_br }}</span>
+        {% if not loop.last %}<hr>{% endif %}
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if opportunity.accepting_questions %}
+    <div class="spacer-10"></div>
+    <h4>Ask a question</h4>
+
+    <form class="form" action="{{ url_for('front.detail', opportunity_id=opportunity.id, form='question_form') }}" method="POST" name="question_form">
+      {{ question_form.csrf_token() }}
+      {{ macros.render_form_field_with_errors(question_form.question, class_="form-control", required="true") }}
+      {{ macros.render_form_field_with_errors(question_form.email, class_="form-control", required="true") }}
+      {{ macros.with_errors(question_form.submit, class_="btn btn-primary") }}
+    </form>
+  {% elif opportunity.qa_closed %}
+    The question and answer period for this opportunity has ended.
+  {% endif %}
+
+</div>

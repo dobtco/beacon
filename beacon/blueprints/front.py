@@ -14,6 +14,7 @@ from beacon.notifications import Notification
 from beacon.forms.opportunities import (
     UnsubscribeForm, VendorSignupForm, OpportunitySignupForm
 )
+from beacon.forms.questions import QuestionForm
 
 from beacon.models.opportunities import Category, Opportunity, Vendor
 
@@ -272,12 +273,21 @@ def detail(opportunity_id):
     '''
     opportunity = Opportunity.query.get(opportunity_id)
     if opportunity and opportunity.can_view(current_user):
+
         signup_form = init_form(OpportunitySignupForm)
-        if signup_form.validate_on_submit():
-            signup_success = signup_for_opp(signup_form, opportunity)
-            if signup_success:
-                flash('Successfully subscribed for updates!', 'alert-success')
-                return redirect(url_for('front.detail', opportunity_id=opportunity.id))
+        question_form = init_form(QuestionForm)
+
+        forms = {
+            'signup_form': signup_form,
+            'question_form': question_form
+        }
+
+        submitted_form_name = request.args.get('form', None)
+
+        if submitted_form_name:
+            submitted_form = forms[submitted_form_name]
+            if submitted_form.validate_on_submit():
+                return submitted_form.post_validate_action(opportunity)
 
         current_app.logger.info('BEACON FRONT OPPORTUNITY DETAIL VIEW | Opportunity {} (ID: {})'.format(
             opportunity.title.encode('ascii', 'ignore'), opportunity.id
@@ -286,5 +296,7 @@ def detail(opportunity_id):
         return render_template(
             'beacon/front/detail.html', opportunity=opportunity,
             current_user=current_user, signup_form=signup_form,
+            question_form=question_form,
+            questions=opportunity.get_answered_questions()
         )
     abort(404)

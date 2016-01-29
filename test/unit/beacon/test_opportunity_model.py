@@ -170,3 +170,31 @@ class TestOpportunityModel(TestCase):
         )
         self.assertFalse(should_not_send2.send_publish_email())
         self.assertTrue(send.called_once)
+
+    def test_opportunity_qa_disabled(self):
+        qa_disabled = OpportunityFactory.build(
+            enable_qa=False
+        )
+        self.assertFalse(qa_disabled.accepting_questions)
+        self.assertTrue(qa_disabled.qa_closed)
+
+    def test_opportunity_qa_closed(self):
+        closed_opp = OpportunityFactory.build(
+            enable_qa=True, qa_start=self.yesterday, qa_end=self.yesterday
+        )
+        self.assertFalse(closed_opp.accepting_questions)
+        self.assertTrue(closed_opp.qa_closed)
+
+    def test_opportunity_qa_open_in_future(self):
+        future_qa = OpportunityFactory.build(
+            enable_qa=True, qa_start=self.tomorrow, qa_end=self.tomorrow
+        )
+        self.assertFalse(future_qa.accepting_questions)
+        self.assertFalse(future_qa.qa_closed)
+
+    def test_opportunity_valid_qa_period(self):
+        good_qa = OpportunityFactory.build(
+            enable_qa=True, qa_start=self.yesterday, qa_end=self.tomorrow
+        )
+        self.assertTrue(good_qa.accepting_questions)
+        self.assertFalse(good_qa.qa_closed)

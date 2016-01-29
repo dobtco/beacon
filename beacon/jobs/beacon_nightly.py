@@ -35,7 +35,7 @@ class BeaconNewOppotunityOpenJob(EmailJobBase):
                     to_email=set([i.email for i in category_vendors] + [i.email for i in opportunity.vendors]),
                     cc_email=list(),
                     from_email=current_app.config['BEACON_SENDER'],
-                    subject='A new City of Pittsburgh opportunity from Beacon!',
+                    subject='A new opportunity from Beacon!',
                     html_template='beacon/emails/newopp.html',
                     txt_template='beacon/emails/newopp.txt',
                     opportunity=opportunity

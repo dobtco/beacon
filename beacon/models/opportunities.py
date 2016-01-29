@@ -16,6 +16,7 @@ from sqlalchemy.dialects.postgresql import TSVECTOR
 from beacon.notifications import Notification
 from beacon.utils import build_downloadable_groups, random_id
 from beacon.models.users import User, Role
+from beacon.models.questions import Question
 
 category_vendor_association_table = Table(
     'category_vendor_association', Model.metadata,
@@ -137,6 +138,10 @@ class Opportunity(Model):
             responses to the opportunity
         planned_submission_end: Deadline for submitted responses to the
             Opportunity
+        enable_qa: Flag for whether or not questions/answers are enabled
+            for this Opportunity
+        qa_start: Start date for accepting questions from vendors
+        qa_end: End date for accepting questions from vendors
         vendor_documents_needed: Array of integers that relate to
             :py:class:`~purchasing.models.front.RequiredBidDocument` ids
         is_public: True if opportunity is approved (publicly visible), False otherwise
@@ -167,10 +172,17 @@ class Opportunity(Model):
     id = Column(db.Integer, primary_key=True)
     title = Column(db.String(255))
     description = Column(db.Text)
+
     planned_publish = Column(db.DateTime, nullable=False)
     planned_submission_start = Column(db.DateTime, nullable=False)
     planned_submission_end = Column(db.DateTime, nullable=False)
+
+    enable_qa = Column(db.Boolean, nullable=False, default=True)
+    qa_start = Column(db.DateTime)
+    qa_end = Column(db.DateTime)
+
     vendor_documents_needed = Column(ARRAY(db.Integer()))
+
     is_public = Column(db.Boolean(), default=False)
     is_archived = Column(db.Boolean(), default=False, nullable=False)
 
@@ -199,6 +211,24 @@ class Opportunity(Model):
     opportunity_type = db.relationship(
         'OpportunityType', backref=backref('opportunities', lazy='dynamic'),
     )
+
+    @property
+    def accepting_questions(self):
+        if self.qa_start is None or self.qa_end is None:
+            return False
+        return all([
+            self.enable_qa,
+            datetime.datetime.today() >= self.qa_start,
+            datetime.datetime.today() <= self.qa_end
+        ])
+
+    @property
+    def qa_closed(self):
+        if self.qa_start is None or self.qa_end is None:
+            return True
+        if not self.enable_qa:
+            return True
+        return datetime.datetime.today() > self.qa_end
 
     @classmethod
     def create(cls, data, user, documents, publish=False):
@@ -506,7 +536,7 @@ class Opportunity(Model):
 
             Notification(
                 to_email=[i.email for i in vendors],
-                subject='A new City of Pittsburgh opportunity from Beacon!',
+                subject='A new opportunity from Beacon!',
                 html_template='beacon/emails/newopp.html',
                 txt_template='beacon/emails/newopp.txt',
                 opportunity=self
@@ -522,8 +552,14 @@ class Opportunity(Model):
                     str(self.planned_submission_start), str(self.planned_submission_end)
                 )
             )
-            return True
-        return False
+            return self
+        return self
+
+    def get_answered_questions(self):
+        return Question.query.filter(
+            Question.opportunity_id == self.id,
+            Question.answer_text != None
+        ).all()
 
 class OpportunityDocument(Model):
     '''Model for bid documents associated with opportunities

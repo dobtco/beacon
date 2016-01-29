@@ -7,11 +7,14 @@ from werkzeug.datastructures import MultiDict
 
 from beacon.extensions import mail, db
 from beacon.models.opportunities import Vendor
+from beacon.models.questions import Question
 
 from test.integration.beacon.test_base import (
     TestOpportunitiesFrontBase, TestOpportunitiesAdminBase
 )
-from test.factories import OpportunityFactory, RoleFactory, UserFactory
+from test.factories import (
+    OpportunityFactory, RoleFactory, UserFactory, QuestionFactory
+)
 
 class TestOpportunities(TestOpportunitiesFrontBase):
     render_templates = True
@@ -300,7 +303,7 @@ class TestOpportunitiesSubscriptions(TestOpportunitiesAdminBase):
 
         with mail.record_messages() as outbox:
             self.assertEquals(Vendor.query.count(), 1)
-            post = self.client.post('/opportunities/{}'.format(self.opportunity1.id), data={
+            post = self.client.post('/opportunities/{}?form=signup_form'.format(self.opportunity1.id), data={
                 'email': 'new@foo.com', 'business_name': 'foo'
             })
             # should create a new vendor
@@ -347,3 +350,77 @@ class TestOpportunitiesSubscriptions(TestOpportunitiesAdminBase):
 
             self.assertEquals(Vendor.query.count(), 1)
             self.assertEquals(Vendor.query.first().business_name, 'NEW NAME')
+
+class TestOpportunityQuestions(TestOpportunitiesAdminBase):
+    def setUp(self):
+        super(TestOpportunityQuestions, self).setUp()
+        self.opportunity3.created_by = self.staff
+        self.opportunity3.save()
+        self.opportunity_url = '/opportunities/{}'.format(self.opportunity3.id)
+
+    def test_question_form_validation(self):
+        self.assert200(self.client.get(self.opportunity_url))
+        self.assertEquals(len(self.get_context_variable('questions')), 0)
+
+        bad_vendor = self.client.post(self.opportunity_url + '?form=question_form', data=dict(
+            question='my question',
+            email='owner@notsignedup.biz',
+        ))
+        self.assertEquals(Question.query.count(), 0)
+        self.assertTrue('You need to sign up to ask a question' in bad_vendor.data)
+
+    def test_ask_a_question(self):
+        with mail.record_messages() as outbox:
+            self.client.post(self.opportunity_url + '?form=question_form', data=dict(
+                question='look at my question',
+                email=self.vendor.email
+            ))
+            self.assertEquals(Question.query.count(), 1)
+            self.assertEquals(len(outbox), 2)
+            self.assertTrue('look at my question' in outbox[0].body)
+
+    def test_same_person_emailed_once(self):
+        self.opportunity3.created_by = self.admin
+        self.opportunity3.save()
+        with mail.record_messages() as outbox:
+            self.client.post(self.opportunity_url + '?form=question_form', data=dict(
+                question='look at my question',
+                email=self.vendor.email
+            ))
+            self.assertEquals(Question.query.count(), 1)
+            self.assertEquals(len(outbox), 1)
+
+    def test_answered_questions_render(self):
+        QuestionFactory.create(
+            question_text='wow look at this question',
+            answer_text='wow look at this answer',
+            opportunity=self.opportunity3
+        ).save()
+        QuestionFactory.create(
+            question_text='this unanswered question will not render',
+            opportunity=self.opportunity3
+        ).save()
+
+        opp = self.client.get(self.opportunity_url)
+        self.assertTrue('wow look at this question' in opp.data)
+        self.assertTrue('wow look at this answer' in opp.data)
+        self.assertFalse('this unanswered question will not render' in opp.data)
+
+    def test_question_section_no_render_when_qa_disabled(self):
+        opp = self.client.get('/opportunities/{}'.format(self.opportunity2.id))
+        self.assert200(opp)
+        self.assertTrue('Questions' not in opp.data)
+        self.assertTrue('Ask a question' not in opp.data)
+
+    def test_new_questions_disabled_when_qa_disabled(self):
+        QuestionFactory.create(
+            question_text='wow look at this question',
+            answer_text='wow look at this answer',
+            opportunity=self.opportunity2
+        )
+        opp = self.client.get('/opportunities/{}'.format(self.opportunity2.id))
+        self.assert200(opp)
+        self.assertTrue('Questions' in opp.data)
+        self.assertTrue('wow look at this question' in opp.data)
+        self.assertTrue('wow look at this answer' in opp.data)
+        self.assertTrue('Ask a question' not in opp.data)

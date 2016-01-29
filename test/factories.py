@@ -13,6 +13,7 @@ from beacon.models.opportunities import (
     Opportunity, RequiredBidDocument, OpportunityDocument, Category,
     Vendor, OpportunityType
 )
+from beacon.models.questions import Question
 from beacon.jobs.job_base import JobStatus
 
 class BaseFactory(SQLAlchemyModelFactory):
@@ -37,7 +38,7 @@ class DepartmentFactory(BaseFactory):
 
 class UserFactory(BaseFactory):
     id = factory.Sequence(lambda n: n + 100)
-    email = factory.Sequence(lambda n: '{}'.format(n))
+    email = factory.Sequence(lambda n: '{}@foo.com'.format(n))
     created_at = factory.Sequence(lambda n: datetime.datetime.now())
     first_name = factory.Sequence(lambda n: '{}'.format(n))
     last_name = factory.Sequence(lambda n: '{}'.format(n))
@@ -65,10 +66,13 @@ class CategoryFactory(BaseFactory):
 class OpportunityFactory(BaseFactory):
     id = factory.Sequence(lambda n: n + 100)
     department = factory.SubFactory(DepartmentFactory)
-    contact = factory.SubFactory(UserFactory)
     created_by = factory.SubFactory(UserFactory)
+    contact = factory.SubFactory(UserFactory)
     vendor_documents_needed = []
     title = 'Default'
+    enable_qa = True
+    qa_start = datetime.datetime.today() - datetime.timedelta(days=1)
+    qa_end = datetime.datetime.today() + datetime.timedelta(days=5)
 
     @factory.post_generation
     def categories(self, create, extracted, **kwargs):
@@ -104,6 +108,15 @@ class VendorFactory(BaseFactory):
 
     class Meta:
         model = Vendor
+
+class QuestionFactory(BaseFactory):
+    id = factory.Sequence(lambda n: n + 100)
+    question_text = 'i am a question'
+    asked_by = factory.SubFactory(VendorFactory)
+    opportunity = factory.SubFactory(OpportunityFactory)
+
+    class Meta:
+        model = Question
 
 class RequiredBidDocumentFactory(BaseFactory):
     id = factory.Sequence(lambda n: n + 100)

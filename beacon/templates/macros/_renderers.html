@@ -1,0 +1,134 @@
+{% macro render_alert(category, message) %}
+  <div class="alert {{ category }} alert-dismissible flashed-alert fade in" role="alert">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    {{ message }}
+  </div>
+{% endmacro %}
+
+{% macro render_opportunity_nav(opportunity, active) %}
+
+  <h3><strong>{{ opportunity.title }}</strong></h3>
+  <ul class="nav nav-tabs">
+    <li role="presentation" class="{% if active == 'questions' %}active{% endif %}"><a href="{{ url_for('beacon_admin.questions', opportunity_id=opportunity.id) }}">Questions</a></li>
+    <li role="presentation" class="{% if active == 'submissions' %}active{% endif %}"><a href="https://screendoor.dobt.co/sign_in" target="_blank">Submissions</a></li>
+    <li role="presentation" class="pull-right {% if active == 'view' %}active{% endif %}">
+      <a href="{{ url_for('front.detail', opportunity_id=opportunity.id) }}">View</a>
+    </li>
+    <li role="presentation" class="pull-right {% if active == 'edit' %}active{% endif %}"><a href="{{ url_for('beacon_admin.edit', opportunity_id=opportunity.id) }}">Edit</a></li>
+  </ul>
+
+  <div class="spacer-20"></div>
+
+{% endmacro %}
+
+{% macro render_questions(title_descriptor_text, questions, opportunity_id) %}
+  {% set num_questions = questions|length %}
+  {% if num_questions > 0 %}
+    <h4>{{ questions|length }} {{ title_descriptor_text }} {% if num_questions == 1 %}question{% else %}questions {% endif %}</h4>
+    <ul class="list-unstyled">
+      {% for question in questions %}
+        <li>
+          <div class="row">
+            <div class="col-sm-12">
+              <a href="{{ url_for('beacon_admin.answer_question', opportunity_id=opportunity_id, question_id=question.id) }}">{{ question.question_text|truncate(100) }}</a>
+            </div>
+          </div>
+          <div class="row text-muted">
+            {% if question.answer_text %}
+            <div class="col-sm-12">
+              Answered on {{ question.answered_at|datetimeformat('%m/%d/%Y') }} by {{ question.answered_by.email }}{% if question.edited %} (Edited on {{question.edited_at|datetimeformat('%m/%d/%Y') }}){% endif %}
+            </div>
+            <div class="col-sm-12">
+              Asked on {{ question.asked_at|datetimeformat('%m/%d/%Y') }} by {{ question.asked_by.email }}
+            </div>
+            {% else %}
+            <div class="col-sm-12">
+              Asked on {{ question.asked_at|datetimeformat('%m/%d/%Y') }} by {{ question.asked_by.email }}
+            </div>
+            {% endif %}
+          </div>
+        </li>
+        {% if not loop.last %}<div class="spacer-20"></div>{% endif %}
+      {% endfor %}
+    </ul>
+  {% else %}
+    <h4>No {{ title_descriptor_text}} questions</h4>
+  {% endif %}
+{% endmacro %}
+
+{% macro with_errors(field) %}
+  {% if field.errors %}
+    {% set css_class = 'has-error ' + kwargs.pop('class_', '') %}
+    {% for error in field.errors %}
+    <div class="alert alert-danger alert-dismissable">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <span>{{ error|e }}</span>
+    </div>
+    {% endfor %}
+    {{ field(class=css_class, **kwargs) }}
+  {% else %}
+    {{ field(**kwargs) }}
+  {% endif %}
+{% endmacro %}
+
+{% macro render_checkbox_field(field) %}
+  {% set label_text = kwargs.pop('label_text', '') %}
+  {% if field.errors %}
+    {% set css_class = 'has-error ' + kwargs.pop('class_', '') %}
+    {% for error in field.errors %}
+    <div class="alert alert-danger alert-dismissable">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <span>{{ error|e }}</span>
+    </div>
+    {% endfor %}
+    <div class="checkbox">
+      <label>
+        {{ field(class=css_class, **kwargs) }} {% if label_text != ''%}{{ label_text }}{% endif %}
+      </label>
+    </div>
+  {% else %}
+  <div class="checkbox">
+    <label>
+      {{ field(**kwargs) }} {% if label_text != ''%}{{ label_text }}{% endif %}
+    </label>
+  </div>
+  {% endif %}
+{% endmacro %}
+
+{% macro render_form_field_with_errors(field) %}
+  {% set help_block = kwargs.pop('help_block', '') %}
+  {% set required = kwargs.pop('required', '') %}
+  {% if field.errors %}
+    {% set css_class = 'has-error ' + kwargs.pop('class_', '') %}
+    {% for error in field.errors %}
+    <div class="alert alert-danger alert-dismissable">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <span>{{ error|e }}</span>
+    </div>
+    {% endfor %}
+    <div class="form-group">
+      <label class="control-label">{{ field.label }} {% if required != '' %}<span class="form-required">*</span>{% endif %}</label>
+      {% if help_block != '' %}
+      <p class="help-block">Who is the using department for this opportunity?</p>
+      {% endif %}
+      {{ field(class=css_class, **kwargs)|safe }}
+    </div>
+
+  {% else %}
+    <div class="form-group">
+      <label class="control-label">{{ field.label }} {% if required != '' %}<span class="form-required">*</span>{% endif %}</label>
+      {% if help_block != '' %}
+      <p class="help-block">{{ help_block }}</p>
+      {% endif %}
+      {{ field(**kwargs)|safe }}
+    </div>
+  {% endif %}
+{% endmacro %}
+
+{% macro render_name(action, user) %}
+  {%- if action.taken_by == user.id %}
+    You
+  {%- else %}
+    {{ action.taken_by|print_user_name }}
+  {%- endif %}
+{% endmacro %}

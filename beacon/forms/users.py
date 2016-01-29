@@ -40,11 +40,18 @@ class ExtendedRegisterForm(RegisterForm):
         get_pk=lambda i: i.id,
         get_label=lambda i: i.name
     )
+    department = QuerySelectField(
+        query_factory=Department.query_factory_all,
+        get_pk=lambda i: i.id,
+        get_label=lambda i: i.name
+    )
 
     def __init__(self, *args, **kwargs):
         super(ExtendedRegisterForm, self).__init__(*args, **kwargs)
         if not self.roles.data:
             self.roles.data = [Role.query.filter(Role.name == 'staff').first()]
+        if not self.department.data:
+            self.department.data = Department.query.filter(Department.name == 'New User').first()
 
     def validate(self):
         if not super(ExtendedRegisterForm, self).validate():
