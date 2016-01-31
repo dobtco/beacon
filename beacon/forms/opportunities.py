@@ -420,14 +420,14 @@ class OpportunityForm(CategoryForm):
     qa_start = fields.DateField(
         'Q&A Start Date',
         validators=[
-            RequiredIf('enable_qa'), RequiredDateBefore('qa_start')
+            RequiredIf('enable_qa'), RequiredDateBefore('qa_start'), Optional()
         ]
     )
     qa_end = fields.DateField(
         'Q&A End Date',
         validators=[
             RequiredIf('enable_qa'), RequiredDateAfter('qa_start'),
-            RequiredDateBefore('planned_submission_end')
+            RequiredDateBefore('planned_submission_end'), Optional()
         ]
     )
 

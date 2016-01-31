@@ -252,7 +252,7 @@ class Opportunity(Model):
             have more information about the documents.
 
         '''
-        opportunity = Opportunity(**data)
+        opportunity = super(Opportunity, cls).create(**data)
 
         current_app.logger.info(
 '''BEACON NEW - New Opportunity Created: Department: {} | Title: {} | Publish Date: {} | Submission Start Date: {} | Submission End Date: {}
@@ -490,13 +490,8 @@ class Opportunity(Model):
             if publish:
                 self.is_public = True
 
-    def notify_approvals(self, user):
-        '''Send the approval notifications to everyone with approval rights
-
-        Arguments:
-            user: A :py:class:`~purchasing.models.users.User` object
-        '''
-        Notification(
+    def _notify_user(self, user):
+        return Notification(
             to_email=[user.email],
             subject='Your post has been sent to OMB for approval',
             html_template='beacon/emails/staff_postsubmitted.html',
@@ -504,7 +499,8 @@ class Opportunity(Model):
             opportunity=self
         ).send(multi=True)
 
-        Notification(
+    def _notify_admins(self):
+        return Notification(
             to_email=db.session.query(User.email).filter(
                 User.roles.any(Role.name.in_(['conductor', 'admin', 'superadmin']))
             ).all(),
@@ -513,6 +509,19 @@ class Opportunity(Model):
             txt_template='beacon/emails/admin_postforapproval.txt',
             opportunity=self
         ).send(multi=True)
+
+    def notify_approvals(self, user):
+        '''Send the approval notifications to everyone with approval rights
+
+        Arguments:
+            user: A :py:class:`~purchasing.models.users.User` object
+        '''
+        self._notify_user(user)
+        # re-add the opportunity to the session -- it's popped by
+        # the celery task
+        db.session.add(self)
+        self._notify_admins()
+        return True
 
     def get_category_ids(self):
         '''Returns the IDs from the Opportunity's related categories
