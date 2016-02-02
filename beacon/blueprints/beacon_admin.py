@@ -6,7 +6,7 @@ from flask import (
     render_template, url_for, Response, stream_with_context,
     redirect, flash, abort, request, current_app, Blueprint
 )
-from flask_security import current_user, roles_accepted
+from flask_security import current_user, roles_accepted, utils as sec_utils
 
 from beacon.database import db
 
@@ -104,6 +104,9 @@ def edit(opportunity_id):
 def questions(opportunity_id):
     opportunity = Opportunity.query.get(opportunity_id)
     if opportunity:
+        if not opportunity.can_edit(current_user):
+            sec_utils.do_flash(*sec_utils.get_message('UNAUTHORIZED'))
+            return redirect('/')
         answered, unanswered = [], []
         for question in opportunity.questions:
             if question.answer_text:
@@ -121,6 +124,9 @@ def questions(opportunity_id):
 def answer_question(opportunity_id, question_id):
     question = Question.query.get(question_id)
     if question:
+        if not question.opportunity.can_edit(current_user):
+            sec_utils.do_flash(*sec_utils.get_message('UNAUTHORIZED'))
+            return redirect('/')
         form = AnswerForm(obj=question)
         if form.validate_on_submit():
             answer = {'answer_text': form.answer_text.data}
@@ -158,6 +164,18 @@ def answer_question(opportunity_id, question_id):
             question=question, opportunity_id=opportunity_id
         )
     abort(404)
+
+@blueprint.route('/opportunities/<int:opportunity_id>/questions/<int:question_id>/delete')
+@roles_accepted('staff', 'approver', 'admin')
+def delete_question(opportunity_id, question_id):
+    question = Question.query.get(question_id)
+    if question:
+        if not question.opportunity.can_edit(current_user):
+            sec_utils.do_flash(*sec_utils.get_message('UNAUTHORIZED'))
+            return redirect('/')
+        question.delete()
+        flash('Question successfully deleted', 'alert-info')
+        return redirect(url_for('beacon_admin.questions', opportunity_id=opportunity_id))
 
 @blueprint.route('/opportunities/<int:opportunity_id>/document/<int:document_id>/remove')
 @roles_accepted('staff', 'approver', 'admin')

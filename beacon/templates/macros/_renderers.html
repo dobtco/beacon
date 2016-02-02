@@ -29,8 +29,15 @@
       {% for question in questions %}
         <li>
           <div class="row">
-            <div class="col-sm-12">
+            <div class="col-sm-11">
               <a href="{{ url_for('beacon_admin.answer_question', opportunity_id=opportunity_id, question_id=question.id) }}">{{ question.question_text|truncate(100) }}</a>
+            </div>
+            <div class="col-sm-1">
+              <span class="pull-right">
+                <a href="{{ url_for('beacon_admin.delete_question', opportunity_id=opportunity_id, question_id=question.id) }}" onclick="return confirm('Are you sure you want to delete this question?')">
+                <i class="fa fa-trash"></i>
+                </a>
+              </span>
             </div>
           </div>
           <div class="row text-muted">
@@ -109,9 +116,9 @@
     <div class="form-group">
       <label class="control-label">{{ field.label }} {% if required != '' %}<span class="form-required">*</span>{% endif %}</label>
       {% if help_block != '' %}
-      <p class="help-block">Who is the using department for this opportunity?</p>
+      <p class="help-block">{{ help_block }}</p>
       {% endif %}
-      {{ field(class=css_class, **kwargs)|safe }}
+      {{ field(class=css_class, **kwargs) }}
     </div>
 
   {% else %}
@@ -120,7 +127,7 @@
       {% if help_block != '' %}
       <p class="help-block">{{ help_block }}</p>
       {% endif %}
-      {{ field(**kwargs)|safe }}
+      {{ field(**kwargs) }}
     </div>
   {% endif %}
 {% endmacro %}

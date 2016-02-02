@@ -476,6 +476,7 @@ class TestOpportunityQuestions(TestOpportunitiesAdminBase):
         self.opportunity3.created_by = self.staff
         self.opportunity3.save()
         self.answer_url = '/beacon/admin/opportunities/{}/questions/{}'.format(self.opportunity3.id, self.q1.id)
+        self.question_url = '/beacon/admin/opportunities/{}/questions'.format(self.opportunity3.id)
 
     def test_browse_questions(self):
         self.assertEquals(
@@ -484,7 +485,7 @@ class TestOpportunityQuestions(TestOpportunitiesAdminBase):
         )
         self.login_user(self.admin)
         self.assert404(self.client.get('/beacon/admin/opportunities/10000/questions'))
-        self.client.get('/beacon/admin/opportunities/{}/questions'.format(self.opportunity3.id))
+        self.client.get(self.question_url)
         self.assertEquals(len(self.get_context_variable('answered')), 1)
         self.assertEquals(len(self.get_context_variable('unanswered')), 1)
 
@@ -497,7 +498,7 @@ class TestOpportunityQuestions(TestOpportunitiesAdminBase):
                     answer_text='ANSWER TO YOUR QUESTION'
                 )
             )
-            self.client.get('/beacon/admin/opportunities/{}/questions'.format(self.opportunity3.id))
+            self.client.get(self.question_url)
             self.assertEquals(len(self.get_context_variable('answered')), 2)
             self.assertEquals(Question.query.get(self.q1.id).answered_by, self.admin)
 
@@ -515,7 +516,7 @@ class TestOpportunityQuestions(TestOpportunitiesAdminBase):
         self.q1.answer_text = 'an answer'
         self.q1.save()
         self.login_user(self.admin)
-        questions = self.client.get('/beacon/admin/opportunities/{}/questions'.format(self.opportunity3.id))
+        questions = self.client.get(self.question_url)
         self.assertTrue('Edited on' not in questions.data)
         self.assertTrue('No unanswered questions' in questions.data)
 
@@ -525,7 +526,22 @@ class TestOpportunityQuestions(TestOpportunitiesAdminBase):
             )
             self.assertEquals(len(outbox), 0)
 
-        new_questions = self.client.get('/beacon/admin/opportunities/{}/questions'.format(self.opportunity3.id))
+        new_questions = self.client.get(self.question_url)
         self.assertEquals(len(self.get_context_variable('answered')), 2)
         self.assertTrue('Edited on' in new_questions.data)
         self.assertTrue('No unanswered questions' in new_questions.data)
+
+    def test_delete_questions(self):
+        self.assertEquals(Question.query.count(), 2)
+        self.login_user(self.admin)
+        self.assertEquals(self.client.get(self.answer_url + '/delete').status_code, 302)
+        self.assertEquals(Question.query.count(), 1)
+
+    def test_questions_permissions(self):
+        self.opportunity3.created_by = self.admin
+        self.opportunity3.save()
+        self.assertEquals(self.client.get(self.question_url).status_code, 302)
+        self.login_user(self.staff)
+        self.assertEquals(self.client.get(self.question_url).status_code, 302)
+        self.assertEquals(self.client.get(self.answer_url).status_code, 302)
+        self.assertEquals(self.client.get(self.answer_url + '/delete').status_code, 302)

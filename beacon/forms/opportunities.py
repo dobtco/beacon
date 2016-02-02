@@ -416,11 +416,11 @@ class OpportunityForm(CategoryForm):
         ]
     )
 
-    enable_qa = fields.BooleanField()
+    enable_qa = fields.BooleanField('Enable Q&A')
     qa_start = fields.DateField(
         'Q&A Start Date',
         validators=[
-            RequiredIf('enable_qa'), RequiredDateBefore('qa_start'), Optional()
+            RequiredIf('enable_qa'), RequiredDateBefore('qa_end'), Optional()
         ]
     )
     qa_end = fields.DateField(

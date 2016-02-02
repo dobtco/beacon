@@ -62,7 +62,15 @@
           </div>
         </div>
 
-        {{ macros.render_form_field_with_errors(form.vendor_documents_needed, help_block="Choose the documents that vendor will need to include in order to successfully respond to the opportunity.")}}
+        {% if form.vendor_documents_needed.choices|length > 0 %}
+          <div class="form-group">
+            <label for="vendor_documents_needed" class="control-label">Documents the vendor will need</label>
+              <p class="help-block">
+                Choose the documents that vendor will need to include in order to successfully respond to the opportunity.
+              </p>
+            {{ form.vendor_documents_needed }}
+          </div><!-- documents needed -->
+        {% endif %}
 
         <div class="form-group">
           <label for="document" class="control-label">Upload your solicitation documents.</label>
