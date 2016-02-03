@@ -358,22 +358,22 @@ class TestOpportunityQuestions(TestOpportunitiesAdminBase):
         self.opportunity3.save()
         self.opportunity_url = '/opportunities/{}'.format(self.opportunity3.id)
 
-    def test_question_form_validation(self):
-        self.assert200(self.client.get(self.opportunity_url))
-        self.assertEquals(len(self.get_context_variable('questions')), 0)
-
-        bad_vendor = self.client.post(self.opportunity_url + '?form=question_form', data=dict(
+    def test_question_new_vendor(self):
+        self.assertEquals(Vendor.query.count(), 1)
+        self.client.post(self.opportunity_url + '?form=question_form', data=dict(
             question='my question',
+            business_name='notsignedupbiz',
             email='owner@notsignedup.biz',
         ))
-        self.assertEquals(Question.query.count(), 0)
-        self.assertTrue('You need to sign up to ask a question' in bad_vendor.data)
+        self.assertEquals(Question.query.count(), 1)
+        self.assertEquals(Vendor.query.count(), 2)
 
     def test_ask_a_question(self):
         with mail.record_messages() as outbox:
             self.client.post(self.opportunity_url + '?form=question_form', data=dict(
                 question='look at my question',
-                email=self.vendor.email
+                email=self.vendor.email,
+                business_name=self.vendor.business_name
             ))
             self.assertEquals(Question.query.count(), 1)
             self.assertEquals(len(outbox), 2)
@@ -385,7 +385,8 @@ class TestOpportunityQuestions(TestOpportunitiesAdminBase):
         with mail.record_messages() as outbox:
             self.client.post(self.opportunity_url + '?form=question_form', data=dict(
                 question='look at my question',
-                email=self.vendor.email
+                email=self.vendor.email,
+                business_name=self.vendor.business_name
             ))
             self.assertEquals(Question.query.count(), 1)
             self.assertEquals(len(outbox), 1)
@@ -424,3 +425,15 @@ class TestOpportunityQuestions(TestOpportunitiesAdminBase):
         self.assertTrue('wow look at this question' in opp.data)
         self.assertTrue('wow look at this answer' in opp.data)
         self.assertTrue('Ask a question' not in opp.data)
+
+    def test_new_question_different_business_name(self):
+        self.client.post(self.opportunity_url + '?form=question_form', data=dict(
+            question='look at my question',
+            email=self.vendor.email,
+            business_name='a very new name'
+        ))
+        self.assertEquals(Question.query.count(), 1)
+        self.assertEquals(
+            Vendor.query.get(self.vendor.id).business_name,
+            'a very new name'
+        )

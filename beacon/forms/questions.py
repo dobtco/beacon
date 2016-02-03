@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from flask import flash, redirect, url_for
+from sqlalchemy.orm.exc import NoResultFound
 
 from flask_wtf import Form
 from wtforms import fields
@@ -8,22 +9,34 @@ from wtforms.validators import DataRequired, Email
 
 from beacon.database import db
 from beacon.notifications import Notification
-from beacon.forms.validators import registered_vendor_email
 from beacon.models.opportunities import Vendor
 from beacon.models.questions import Question
 
 class QuestionForm(Form):
     question = fields.TextAreaField('Your question', validators=[DataRequired()])
     email = fields.TextField(
-        'Your email', validators=[DataRequired(), Email(), registered_vendor_email]
+        'Your email', validators=[DataRequired(), Email()]
+    )
+    business_name = fields.TextField(
+        "What's the name of your business?", validators=[DataRequired()]
     )
     submit = fields.SubmitField()
 
     def post_validate_action(self, opportunity):
+        try:
+            vendor = Vendor.query.filter(
+                Vendor.email == self.email.data
+            ).one()
+            vendor.update(business_name=self.business_name.data)
+        except NoResultFound:
+            vendor = Vendor.create(
+                email=self.email.data,
+                business_name=self.business_name.data
+            ).save()
+
         question = Question.create(
             question_text=self.question.data,
-            asked_by_id=Vendor.query.filter(
-                Vendor.email == self.email.data).one().id,
+            asked_by_id=vendor.id,
             opportunity_id=opportunity.id
         )
         db.session.commit()

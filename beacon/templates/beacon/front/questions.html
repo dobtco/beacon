@@ -21,6 +21,7 @@
     <form class="form" action="{{ url_for('front.detail', opportunity_id=opportunity.id, form='question_form') }}" method="POST" name="question_form">
       {{ question_form.csrf_token() }}
       {{ macros.render_form_field_with_errors(question_form.question, class_="form-control", required="true") }}
+      {{ macros.render_form_field_with_errors(question_form.business_name, class_="form-control", required="true") }}
       {{ macros.render_form_field_with_errors(question_form.email, class_="form-control", required="true") }}
       {{ macros.with_errors(question_form.submit, class_="btn btn-primary") }}
     </form>
