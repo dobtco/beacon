@@ -93,6 +93,10 @@ class TestConfigBasedFilters(FlaskTestCase):
             newline_to_br(None, 'test\ntest\r\n\r\ntest\r\n\r\ntest'),
             '<p>test<br>\ntest</p>\n\n<p>test</p>\n\n<p>test</p>'
         )
+        self.assertEquals(
+            newline_to_br(None, "<script>alert(No I don't alert)</script>"),
+            '<p>&lt;script&gt;alert(No I don&#39;t alert)&lt;/script&gt;</p>'
+        )
 
     def test_external_link_on(self):
         current_app.config['EXTERNAL_LINK_WARNING'] = 'True'
