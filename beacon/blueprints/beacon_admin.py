@@ -10,8 +10,11 @@ from flask_security import current_user, roles_accepted, utils as sec_utils
 
 from beacon.database import db
 
-from beacon.models.opportunities import Opportunity, Vendor, OpportunityDocument
+from beacon.models.opportunities.base import Opportunity
+from beacon.models.opportunities.documents import OpportunityDocument
+from beacon.models.vendors import Vendor
 from beacon.models.questions import Question
+
 from beacon.forms.opportunities import OpportunityForm
 from beacon.forms.questions import AnswerForm
 
@@ -36,7 +39,8 @@ def new():
 
     if form.validate_on_submit():
         opportunity_data = form.data_cleanup()
-        opportunity = Opportunity.create(
+        _cls = Opportunity.get_opp_class(form.type.data)
+        opportunity = _cls.create(
             opportunity_data, current_user,
             form.documents, request.form.get('save_type') == 'publish'
         )

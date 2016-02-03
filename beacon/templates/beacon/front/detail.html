@@ -115,12 +115,10 @@
         </div>
         {% endif %}
 
-        {% if opportunity.opportunity_type.opportunity_response_instructions %}
         <div class="row">
           <h3><strong>How do I bid?</strong></h3>
-          {{ opportunity.opportunity_type.opportunity_response_instructions|safe }}
+          {{ opportunity.render_instructions() }}
         </div>
-        {% endif %}
 
         <div class="spacer-20"></div>
 
@@ -137,10 +135,17 @@
           </div>
         </div>
 
+        <div class="spacer-10"></div>
+
         {% include "beacon/front/questions.html" %}
 
       </div>
       <div class="col-sm-4 timeline-well">
+
+        {% if opportunity.submissions_page_exists() %}
+        <h3><strong>Submit your propsal</strong></h3>
+        <a href="{{ url_for('front.new_proposal', opportunity_id=opportunity.id) }}"></a>
+        {% endif %}
 
         <h3><strong>Status</strong></h3>
         {% for event in opportunity.get_events() %}

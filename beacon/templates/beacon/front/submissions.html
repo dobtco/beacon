@@ -1,0 +1,42 @@
+{% extends "beacon/layout.html" %}
+
+{% block page_title %}
+  {{ super() }} - New submission for {{ opportunity.title }}
+{% endblock %}
+
+{% block css %}
+{{ super() }}
+<link href="//d3q1ytufopwvkq.cloudfront.net/0/formrenderer.css" rel="stylesheet" />
+{% endblock %}
+
+{% block headjs %}
+  {% if opportunity.type == 'ScreendoorOpportunity' %}
+  {{ super() }}
+  {% assets "vendorjs" %}
+    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+  {% endassets %}
+  {% assets "opportunitiesjs" %}
+    <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+  {% endassets %}
+  <script src="//d3q1ytufopwvkq.cloudfront.net/0/formrenderer.js"></script>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+      <h3><strong>Submit your proposal</strong></h3>
+      {{ opportunity.render_submissions_html() }}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+  {% if opportunity.type != 'ScreendoorOpportunity' %}
+    {{ super() }}
+  {% endif %}
+{% endblock %}

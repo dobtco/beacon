@@ -18,7 +18,9 @@ from wtforms.validators import (
 )
 from wtforms.ext.sqlalchemy.fields import QuerySelectField, QuerySelectMultipleField
 
-from beacon.models.opportunities import Category, RequiredBidDocument, OpportunityType
+from beacon.models.opportunities.base import Opportunity
+from beacon.models.opportunities.documents import RequiredBidDocument
+from beacon.models.vendors import Category
 
 from beacon.utils import RequiredIf, RequiredDateAfter, RequiredDateBefore
 from beacon.models.users import Department
@@ -356,8 +358,10 @@ class OpportunityForm(CategoryForm):
     Attributes:
         department: link to :py:class:`~purchasing.models.users.Department`
             that is primarily responsible for administering the RFP, required
-        opportunity_type: link to :py:class:`~purchasing.data.contracts.ContractType` objects
-            that have the ``allow_opportunities`` field set to True
+        type: which type of opportunity this will be. this will
+            control instructions and submissions
+        submission_data: additional data to help power instructions
+            and submissions
         contact_email: Email address of the opportunity's point of contact for questions
         title: Title of the opportunity, required
         description: 500 or less word description of the opportunity, required
@@ -388,13 +392,10 @@ class OpportunityForm(CategoryForm):
         allow_blank=True, blank_text='-----',
         validators=[DataRequired()]
     )
-    opportunity_type = QuerySelectField(
-        query_factory=OpportunityType.query_factory_all,
-        get_pk=lambda i: i.id,
-        get_label=lambda i: i.name,
-        allow_blank=True, blank_text='-----',
-        validators=[DataRequired()]
+    type = fields.SelectField(
+        choices=Opportunity.get_types(),
     )
+    submission_data = fields.TextField()
     contact_email = fields.TextField(validators=[Email(), city_domain_email, DataRequired()])
     title = fields.TextField(validators=[DataRequired()])
     description = fields.TextAreaField(validators=[max_words(), DataRequired()])
@@ -439,6 +440,15 @@ class OpportunityForm(CategoryForm):
     )
     documents = fields.FieldList(fields.FormField(OpportunityDocumentForm), min_entries=1)
 
+    def validate(self):
+        '''Validate the submission_data
+        '''
+        initial_validate = super(OpportunityForm, self).validate()
+        if initial_validate is False:
+            return False
+        self._cls = Opportunity.get_opp_class(self.type.data)
+        return self._cls.validate(self)
+
     def display_cleanup(self, opportunity=None):
         '''Cleans up data for display in the form
 
@@ -482,6 +492,7 @@ class OpportunityForm(CategoryForm):
         opportunity_data['department_id'] = self.department.data.id
         opportunity_data['contact_id'] = parse_contact(opportunity_data.pop('contact_email'), self.department.data)
         opportunity_data['vendor_documents_needed'] = [int(i[0]) for i in opportunity_data['vendor_documents_needed']]
+        opportunity_data['submission_data'] = self._cls.serialize_submission_data(opportunity_data['submission_data'])
         return opportunity_data
 
     def process(self, formdata=None, obj=None, data=None, **kwargs):

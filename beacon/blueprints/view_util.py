@@ -6,7 +6,8 @@ from wtforms import widgets
 from beacon.database import db
 from beacon.notifications import Notification
 from beacon.models.users import User, Role
-from beacon.models.opportunities import Vendor, Opportunity
+from beacon.models.vendors import Vendor
+from beacon.models.opportunities.base import Opportunity
 
 def parse_contact(contact_email, department):
     '''Finds or creates a user as the contact

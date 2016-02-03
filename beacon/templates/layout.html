@@ -30,6 +30,7 @@
     <script type="text/javascript" src="{{ ASSET_URL }}"></script>
     {% endassets %}
   <![endif]-->
+  {% block headjs %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
 {% block body %}
