@@ -57,7 +57,8 @@ def new():
     return render_template(
         'beacon/admin/opportunity.html', form=form, opportunity=None,
         subcategories=form.get_subcategories(),
-        categories=form.get_categories()
+        categories=form.get_categories(),
+        help_blocks=Opportunity.get_help_blocks()
     )
 
 @blueprint.route('/opportunities/<int:opportunity_id>', methods=['GET', 'POST'])

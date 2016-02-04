@@ -60,9 +60,16 @@
           </div>
         </div>
 
-        {{ macros.render_form_field_with_errors(form.type, help_block="How should people respond to this opportunity?", class_="form-control") }}
+        {% if opportunity %}
+          {% set help_blocks=opportunity.get_help_blocks() %}
+          {% set current_help_block=opportunity.get_help_block()[opportunity.type] %}
+        {% else %}
+          {% set current_help_block=help_blocks['Opportunity'] %}
+        {% endif %}
 
-        {{ macros.render_form_field_with_errors(form.submission_data, class_="form-control") }}
+        {{ macros.render_form_field_with_errors(form.type, help_block="How should people respond to this opportunity?", class_="form-control", data_help_block=help_blocks) }}
+
+        {{ macros.render_form_field_with_errors(form.submission_data, class_="form-control", help_block=current_help_block) }}
 
         {% if form.vendor_documents_needed.choices|length > 0 %}
           <div class="form-group">

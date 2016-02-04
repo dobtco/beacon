@@ -118,7 +118,7 @@
     <div class="form-group">
       <label class="control-label">{{ field.label }} {% if required != '' %}<span class="form-required">*</span>{% endif %}</label>
       {% if help_block != '' %}
-      <p class="help-block">{{ help_block }}</p>
+      <p class="help-block" id="{{ field.label.field_id|lower }}-help-block">{{ help_block }}</p>
       {% endif %}
       {{ field(class=css_class, **kwargs) }}
     </div>
@@ -127,7 +127,7 @@
     <div class="form-group">
       <label class="control-label">{{ field.label }} {% if required != '' %}<span class="form-required">*</span>{% endif %}</label>
       {% if help_block != '' %}
-      <p class="help-block">{{ help_block }}</p>
+      <p class="help-block" id="{{ field.label.field_id|lower }}-help-block">{{ help_block }}</p>
       {% endif %}
       {{ field(**kwargs) }}
     </div>

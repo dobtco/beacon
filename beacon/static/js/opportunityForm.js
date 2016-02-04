@@ -41,4 +41,10 @@
     removeForm($('.js-multiform-remove'));
   });
 
+
+  $('#type').on('change', function(e) {
+    var newBlock = $(e.currentTarget).find(':selected').attr('data-help-block');
+    $('#submission_data-help-block').text(newBlock)
+  })
+
 })();

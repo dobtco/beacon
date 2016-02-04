@@ -17,6 +17,13 @@ class EmailOpportunity(Opportunity):
         return ('EmailOpportunity', 'Submit responses via email address')
 
     @classmethod
+    def get_help_block(cls):
+        return {
+            cls.__name__:
+            'Please put the submission email address below.'
+        }
+
+    @classmethod
     def validate(self, form):
         return form.submission_data.validate(
             form, extra_validators=[DataRequired(), Email(), city_domain_email]
@@ -27,6 +34,9 @@ class EmailOpportunity(Opportunity):
         return {
             'email': submission_data
         }
+
+    def deserialize_submission_data(self):
+        return self.submission_data['email']
 
     def render_instructions(self):
         '''Render submission instructions to a vendor
@@ -49,7 +59,14 @@ class ScreendoorOpportunity(Opportunity):
 
     @classmethod
     def get_opportunity_type(cls):
-        return ('ScreendoorOpportunity', 'Submit responses via screendoor')
+        return (cls.__name__, 'Submit responses via screendoor')
+
+    @classmethod
+    def get_help_block(cls):
+        return {
+            cls.__name__:
+            'Create a new project on Screendoor and copy the project ID below.'
+        }
 
     @classmethod
     def validate(self, form):
@@ -62,6 +79,9 @@ class ScreendoorOpportunity(Opportunity):
         return {
             'embed_token': submission_data
         }
+
+    def deserialize_submission_data(self):
+        return self.submission_data['embed_token']
 
     def render_instructions(self):
         '''Render submission instructions to a vendor

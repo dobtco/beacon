@@ -240,14 +240,26 @@ class Opportunity(Model):
         ]
 
     @classmethod
+    def get_help_blocks(cls):
+        from beacon.models.opportunities import types
+        help_block = Opportunity.get_help_block()
+        for i in Opportunity.__subclasses__():
+            help_block.update(i.get_help_block())
+        return help_block
+
+    @classmethod
     def get_opportunity_type(cls):
-        '''Property to determine
+        '''
 
         Returns:
             Two-tuple of (type, label) to be used for rendering
             and selecting different opportunity types
         '''
-        return ('Opportunity', 'No online submissions')
+        return (cls.__name__, 'No online submissions')
+
+    @classmethod
+    def get_help_block(cls):
+        return {cls.__name__: 'No additional data is required.'}
 
     @property
     def is_published(self):
@@ -511,6 +523,9 @@ class Opportunity(Model):
 
     @classmethod
     def serialize_submission_data(self, submission_data):
+        return None
+
+    def deserialize_submission_data(self):
         return None
 
     def render_instructions(self):

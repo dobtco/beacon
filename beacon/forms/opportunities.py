@@ -11,11 +11,10 @@ from werkzeug import secure_filename
 from flask import current_app, request, flash, redirect, url_for
 from flask_wtf import Form
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import widgets, fields, Form as NoCSRFForm
+from wtforms import fields, Form as NoCSRFForm
 from wtforms.ext.dateutil.fields import DateTimeField
-from wtforms.validators import (
-    DataRequired, Email, ValidationError, Optional
-)
+from wtforms.validators import DataRequired, Email, Optional
+
 from wtforms.ext.sqlalchemy.fields import QuerySelectField, QuerySelectMultipleField
 
 from beacon.models.opportunities.base import Opportunity
@@ -29,57 +28,11 @@ from beacon.forms.validators import (
     email_present, city_domain_email, max_words,
     after_now, validate_phone_number
 )
+from beacon.forms.extras import (
+    MultiCheckboxField, DynamicSelectField, HelpTextSelectWidget
+)
 
 from beacon.utils import connect_to_s3, _get_aggressive_cache_headers
-
-class MultiCheckboxField(fields.SelectMultipleField):
-    '''Custom multiple select field that displays a list of checkboxes
-
-    We have a custom ``pre_validate`` to handle cases where a
-    user has choices from multiple categories.
-    the validation to pass.
-
-    Attributes:
-        widget: wtforms
-            `ListWidget <http://wtforms.readthedocs.org/en/latest/widgets.html#wtforms.widgets.ListWidget>`_
-        option_widget: wtforms
-            `CheckboxInput <http://wtforms.readthedocs.org/en/latest/widgets.html#wtforms.widgets.CheckboxInput>`_
-    '''
-    widget = widgets.ListWidget(prefix_label=False)
-    option_widget = widgets.CheckboxInput()
-
-    def pre_validate(self, form):
-        '''Automatically passes
-
-        We override pre-validate to allow the form to use
-        dynamically created CHOICES.
-
-        See Also:
-            :py:class:`~purchasing.models.front.Category`,
-            :py:class:`~purchasing.forms.front.CategoryForm`
-        '''
-        pass
-
-class DynamicSelectField(fields.SelectField):
-    '''Custom dynamic select field
-    '''
-    def pre_validate(self, form):
-        '''Ensure we have at least one Category and they all correctly typed
-
-        See Also:
-            * :py:class:`~purchasing.models.front.Category`
-        '''
-        if len(self.data) == 0:
-            raise ValidationError('You must select at least one!')
-            return False
-        for category in self.data:
-            if isinstance(category, Category):
-                self.choices.append([category, category])
-                continue
-            else:
-                raise ValidationError('Invalid category!')
-                return False
-        return True
 
 class CategoryForm(Form):
     '''Base form for anything involving Beacon categories
@@ -155,8 +108,12 @@ class CategoryForm(Form):
         categories, subcategories = set(), defaultdict(list)
         for category in all_categories:
             categories.add(category.category)
-            subcategories['Select All'].append((category.id, '{} - {}'.format(category.category_friendly_name, category.category)))
-            subcategories[category.category].append((category.id, category.category_friendly_name))
+            subcategories['Select All'].append((category.id, '{} - {}'.format(
+                category.category_friendly_name, category.category
+            )))
+            subcategories[category.category].append(
+                (category.id, category.category_friendly_name)
+            )
 
         self.categories.choices = list(sorted(zip(categories, categories))) + [('Select All', 'Select All')]
         self.categories.choices.insert(0, ('', '-- Choose One --'))
@@ -394,6 +351,7 @@ class OpportunityForm(CategoryForm):
     )
     type = fields.SelectField(
         choices=Opportunity.get_types(),
+        widget=HelpTextSelectWidget()
     )
     submission_data = fields.TextField()
     contact_email = fields.TextField(validators=[Email(), city_domain_email, DataRequired()])
@@ -464,8 +422,10 @@ class OpportunityForm(CategoryForm):
                 or None.
         '''
         self.vendor_documents_needed.choices = RequiredBidDocument.generate_choices()
-        if opportunity and not self.contact_email.data:
-            self.contact_email.data = opportunity.contact.email
+        if opportunity:
+            self.submission_data.data = opportunity.deserialize_submission_data()
+            if not self.contact_email.data:
+                self.contact_email.data = opportunity.contact.email
 
         if self.planned_submission_end.data:
             self.planned_submission_end.data = pytz.UTC.localize(
