@@ -7,12 +7,12 @@ from shutil import rmtree
 
 from flask import current_app
 
-from beacon.models.opportunities import Category
+from beacon.models.vendors import Category
 from beacon.importer.nigp import main as import_nigp
 
 from test.test_base import BaseTestCase
 from test.factories import (
-    DepartmentFactory, OpportunityTypeFactory, RequiredBidDocumentFactory,
+    DepartmentFactory, RequiredBidDocumentFactory,
     UserFactory, RoleFactory, OpportunityFactory, VendorFactory,
     AcceptedEmailDomainsFactory
 )
@@ -34,7 +34,6 @@ class TestOpportunitiesAdminBase(BaseTestCase):
         import_nigp(current_app.config.get('PROJECT_ROOT') + '/test/mock/nigp.csv')
 
         self.department1 = DepartmentFactory(name='test')
-        self.opportunity_type = OpportunityTypeFactory.create()
 
         AcceptedEmailDomainsFactory.create(domain='foo.com')
 

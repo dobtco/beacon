@@ -29,8 +29,6 @@
 
         {{ macros.render_form_field_with_errors(form.contact_email, help_block="What is the email of the primary contact for this opportunity?", required="true", class_="form-control", placeholder="ex: example@pittsburghpa.gov") }}
 
-        {{ macros.render_form_field_with_errors(form.opportunity_type, help_block="What type of opportunity is this?", required="true", class_="form-control") }}
-
         {{ macros.render_form_field_with_errors(form.title, help_block="What do you want your opportunity to be named?", required="true", class_="form-control", placeholder="ex: What you need") }}
 
         {{ macros.render_form_field_with_errors(form.description, help_block="How would you describe what you are looking to purchase (no more than 500 words).", required="true", class_="form-control", rows=4, placeholder="ex: The City of Pittsburgh will need to purchase...") }}
@@ -61,6 +59,17 @@
             {{ macros.render_form_field_with_errors(form.qa_end, help_block="When should Q&A close for this opportunity? Required if Q&A is enabled.", class_="form-control datepicker", placeholder="ex: 2016-01-01") }}
           </div>
         </div>
+
+        {% if opportunity %}
+          {% set help_blocks=opportunity.get_help_blocks() %}
+          {% set current_help_block=opportunity.get_help_block()[opportunity.type] %}
+        {% else %}
+          {% set current_help_block=help_blocks['Opportunity'] %}
+        {% endif %}
+
+        {{ macros.render_form_field_with_errors(form.type, help_block="How should people respond to this opportunity?", class_="form-control", data_help_block=help_blocks) }}
+
+        {{ macros.render_form_field_with_errors(form.submission_data, class_="form-control", help_block=current_help_block) }}
 
         {% if form.vendor_documents_needed.choices|length > 0 %}
           <div class="form-group">

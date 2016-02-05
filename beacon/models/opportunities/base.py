@@ -4,120 +4,27 @@ import pytz
 import datetime
 
 from flask import current_app
+from jinja2 import Markup
 
 from beacon.database import Column, Model, db, ReferenceCol
 from beacon.utils import localize_today, localize_now
 
 from sqlalchemy.schema import Table
 from sqlalchemy.orm import backref
-from sqlalchemy.dialects.postgres import ARRAY
-from sqlalchemy.dialects.postgresql import TSVECTOR
+from sqlalchemy.dialects.postgres import ARRAY, JSON
 
 from beacon.notifications import Notification
-from beacon.utils import build_downloadable_groups, random_id
+from beacon.utils import random_id
+from beacon.models.vendors import Vendor, Category
 from beacon.models.users import User, Role
 from beacon.models.questions import Question
-
-category_vendor_association_table = Table(
-    'category_vendor_association', Model.metadata,
-    Column('category_id', db.Integer, db.ForeignKey('category.id', ondelete='SET NULL'), index=True),
-    Column('vendor_id', db.Integer, db.ForeignKey('vendor.id', ondelete='SET NULL'), index=True)
-)
+from beacon.models.opportunities.documents import RequiredBidDocument
 
 category_opportunity_association_table = Table(
     'category_opportunity_association', Model.metadata,
     Column('category_id', db.Integer, db.ForeignKey('category.id', ondelete='SET NULL'), index=True),
     Column('opportunity_id', db.Integer, db.ForeignKey('opportunity.id', ondelete='SET NULL'), index=True)
 )
-
-opportunity_vendor_association_table = Table(
-    'opportunity_vendor_association_table', Model.metadata,
-    Column('opportunity_id', db.Integer, db.ForeignKey('opportunity.id', ondelete='SET NULL'), index=True),
-    Column('vendor_id', db.Integer, db.ForeignKey('vendor.id', ondelete='SET NULL'), index=True)
-)
-
-class Category(Model):
-    '''Category model for opportunities and Vendor signups
-
-    Categories are based on the codes created by the `National Institute
-    of Government Purchasing (NIGP) <http://www.nigp.org/eweb/StartPage.aspx>`_.
-    The names of the categories have been re-written a bit to make them more
-    human-readable and in some cases a bit more modern.
-
-    Attributes:
-        id: Primary key unique ID
-        nigp_codes: Array of integers refering to NIGP codes.
-        category: parent top-level category
-        subcategory: NIGP designated subcategory name
-        category_friendly_name: Rewritten, more human-readable subcategory name
-        examples: Pipe-delimited examples of items that fall in each subcategory
-        examples_tsv: TSVECTOR of the examples for that subcategory
-
-    See Also:
-        The :ref:`nigp-importer` contains more information about how NIGP codes
-        are imported into the system.
-    '''
-    __tablename__ = 'category'
-
-    id = Column(db.Integer, primary_key=True, index=True)
-    nigp_codes = Column(ARRAY(db.Integer()))
-    category = Column(db.String(255))
-    subcategory = Column(db.String(255))
-    category_friendly_name = Column(db.Text)
-    examples = Column(db.Text)
-    examples_tsv = Column(TSVECTOR)
-
-    def __unicode__(self):
-        return '{sub} (in {main})'.format(sub=self.category_friendly_name, main=self.category)
-
-    @classmethod
-    def parent_category_query_factory(cls):
-        '''Query factory to return a query of all of the distinct top-level categories
-        '''
-        return db.session.query(db.distinct(cls.category).label('category')).order_by('category')
-
-    @classmethod
-    def query_factory(cls):
-        '''Query factory that returns all category/subcategory pairs
-        '''
-        return cls.query
-
-class OpportunityType(Model):
-    '''Model for opportunity types
-
-    Attributes:
-        id: Primary key unique ID
-        name: Name of the contract type
-        opportunity_response_instructions: HTML string of instructions
-            for bidders on how to respond to opportunities of this
-            type
-    '''
-    __tablename__ = 'opportunity_type'
-
-    id = Column(db.Integer, primary_key=True, index=True)
-    name = Column(db.String(255))
-    opportunity_response_instructions = Column(db.Text)
-
-    def __unicode__(self):
-        return self.name if self.name else ''
-
-    @classmethod
-    def query_factory_all(cls):
-        '''Query factory to return all contract types
-        '''
-        return cls.query.order_by(cls.name)
-
-    @classmethod
-    def get_type(cls, type_name):
-        '''Get an individual type based on a passed type name
-
-        Arguments:
-            type_name: Name of the type to look up
-
-        Returns:
-            One :py:class:`~purchasing.data.contracts.ContractType` object
-        '''
-        return cls.query.filter(db.func.lower(cls.name) == type_name.lower()).first()
 
 class Opportunity(Model):
     '''Base Opportunity Model -- the central point for Beacon
@@ -159,8 +66,13 @@ class Opportunity(Model):
         categories: Many-to-many relationship of the
             :py:class:`~purchasing.models.front.Category` objects
             for this opportunity
-        opportunity_type_id: ID of the :py:class:`~beacon.models.front.OpportunityType`
-        opportunity_type: Sqlalchemy relationship to the :py:class:`~beacon.models.front.OpportunityType`
+
+        type: Polymorphic mapping identity field for sqlalchemy single
+            table inheritance. This is used by the child sqlalchemy types
+            to implement different submission and response instruction behavior
+        submission_data: JSON field used to handle additional data for
+            submissions based on the type of the opportunity
+
 
     See Also:
         For more on the Conductor <--> Beacon relationship, look at the
@@ -207,10 +119,13 @@ class Opportunity(Model):
         collection_class=set
     )
 
-    opportunity_type_id = ReferenceCol('opportunity_type', ondelete='SET NULL', nullable=True)
-    opportunity_type = db.relationship(
-        'OpportunityType', backref=backref('opportunities', lazy='dynamic'),
-    )
+    type = Column(db.String(255))
+    submission_data = Column(JSON)
+
+    __mapper_args__ = {
+        'polymorphic_on': type,
+        'polymorphic_identity': 'Opportunity'
+    }
 
     @property
     def accepting_questions(self):
@@ -224,10 +139,8 @@ class Opportunity(Model):
 
     @property
     def qa_closed(self):
-        if self.qa_start is None or self.qa_end is None:
-            return True
         if not self.enable_qa:
-            return True
+            return False
         return datetime.datetime.today() > self.qa_end
 
     @classmethod
@@ -313,6 +226,40 @@ class Opportunity(Model):
 
         self._handle_uploads(documents)
         self._publish(publish)
+
+    @classmethod
+    def get_opp_class(cls, form_type):
+        from beacon.models.opportunities import types
+        return getattr(types, form_type, cls)
+
+    @classmethod
+    def get_types(cls):
+        from beacon.models.opportunities import types
+        return [cls.get_opportunity_type()] + [
+            i.get_opportunity_type() for i in cls.__subclasses__()
+        ]
+
+    @classmethod
+    def get_help_blocks(cls):
+        from beacon.models.opportunities import types
+        help_block = Opportunity.get_help_block()
+        for i in Opportunity.__subclasses__():
+            help_block.update(i.get_help_block())
+        return help_block
+
+    @classmethod
+    def get_opportunity_type(cls):
+        '''
+
+        Returns:
+            Two-tuple of (type, label) to be used for rendering
+            and selecting different opportunity types
+        '''
+        return (cls.__name__, 'No online submissions')
+
+    @classmethod
+    def get_help_block(cls):
+        return {cls.__name__: 'No additional data is required.'}
 
     @property
     def is_published(self):
@@ -570,172 +517,35 @@ class Opportunity(Model):
             Question.answer_text != None
         ).all()
 
-class OpportunityDocument(Model):
-    '''Model for bid documents associated with opportunities
-
-    Attributes:
-        id: Primary key unique ID
-        opportunity_id: Foreign Key relationship back to the related
-            :py:class:`~purchasing.models.front.Opportunity`
-        opportunity: Sqlalchemy relationship back to the related
-            :py:class:`~purchasing.models.front.Opportunity`
-        name: Name of the document for display
-        href: Link to the document
-    '''
-    __tablename__ = 'opportunity_document'
-
-    id = Column(db.Integer, primary_key=True, index=True)
-    opportunity_id = ReferenceCol('opportunity', ondelete='cascade')
-    opportunity = db.relationship(
-        'Opportunity',
-        backref=backref('opportunity_documents', lazy='dynamic', cascade='all, delete-orphan')
-    )
-
-    name = Column(db.String(255))
-    href = Column(db.Text())
-
-    def get_href(self):
-        '''Builds link to the file
-
-        Returns:
-            S3 link if using S3, local filesystem link otherwise
-        '''
-        if current_app.config['UPLOAD_S3']:
-            return self.href
-        else:
-            if self.href.startswith('http'):
-                return self.href
-            return 'file://{}'.format(self.href)
-
-    def clean_name(self):
-        '''Replaces underscores with spaces
-        '''
-        return self.name.replace('_', ' ')
-
-class RequiredBidDocument(Model):
-    '''Model for documents that a vendor would be required to provide
-
-    There are two types of documents associated with an opportunity -- documents
-    that the City will provide (RFP/IFB/RFQ, Q&A documents, etc.), and documents
-    that the bidder will need to provide upon bidding (Insurance certificates,
-    Bid bonds, etc.). This model describes the latter.
-
-    See Also:
-        These models get rendered into a select multi with the descriptions rendered
-        in tooltips. For more on how this works, see the
-        :py:func:`~purchasing.beacon.blueprints.opportunity_view_utils.select_multi_checkbox`.
-
-    Attributes:
-        id: Primary key unique ID
-        display_name: Display name for the document
-        description: Description of what the document is, rendered in a tooltip
-        form_href: A link to an example document
-    '''
-    __tablename__ = 'document'
-
-    id = Column(db.Integer, primary_key=True, index=True)
-    display_name = Column(db.String(255), nullable=False)
-    description = Column(db.Text, nullable=False)
-    form_href = Column(db.String(255))
-
-    def get_choices(self):
-        '''Builds a custom two-tuple for the CHOICES.
-
-        Returns:
-            Two-tuple of (ID, [name, description, href]), which can then be
-            passed to :py:func:`~purchasing.beacon.blueprints.opportunity_view_utils.select_multi_checkbox`
-            to generate multi-checkbox fields
-        '''
-        return (self.id, [self.display_name, self.description, self.form_href])
+    @classmethod
+    def validate(self, form):
+        return True
 
     @classmethod
-    def generate_choices(cls):
-        '''Builds a list of custom CHOICES
+    def serialize_submission_data(self, submission_data):
+        return None
 
-        Returns:
-            List of two-tuples described in the
-            :py:meth:`RequiredBidDocument.get_choices`
-            method
+    def deserialize_submission_data(self):
+        return None
+
+    def render_instructions(self):
+        '''Render submission instructions to a vendor
         '''
-        return [i.get_choices() for i in cls.query.all()]
+        return Markup(
+            '<p>Please refer to the opportunity document for more information.</p>'
+        )
 
-class Vendor(Model):
-    '''Base Vendor model for businesses interested in Beacon
-
-    The primary driving thought behind Beacon is that it should be as
-    easy as possible to sign up to receive updates about new front.
-    Therefore, there are no Vendor accounts or anything like that, just
-    email addresses and business names.
-
-    Attributes:
-        id: Primary key unique ID
-        business_name: Name of the business, required
-        email: Email address for the vendor, required
-        first_name: First name of the vendor
-        last_name: Last name of the vendor
-        phone_number: Phone number for the vendor
-        fax_number: Fax number for the vendor
-        minority_owned: Whether the vendor is minority owned
-        veteran_owned: Whether the vendor is veteran owned
-        woman_owned: Whether the vendor is woman owned
-        disadvantaged_owned: Whether the vendor is any class
-            of Disadvantaged Business Enterprise (DBE)
-        categories: Many-to-many relationship with
-            :py:class:`~purchasing.models.front.Category`;
-            describes what the vendor is subscribed to
-        opportunities: Many-to-many relationship with
-            :py:class:`~purchasing.models.front.Opportunity`;
-            describes what opportunities the vendor is subscribed to
-        subscribed_to_newsletter: Whether the vendor is subscribed to
-            receive the biweekly newsletter of all opportunities
-    '''
-    __tablename__ = 'vendor'
-
-    id = Column(db.Integer, primary_key=True, index=True)
-    business_name = Column(db.String(255), nullable=False)
-    email = Column(db.String(80), unique=True, nullable=False)
-    first_name = Column(db.String(30), nullable=True)
-    last_name = Column(db.String(30), nullable=True)
-    phone_number = Column(db.String(20))
-    fax_number = Column(db.String(20))
-    minority_owned = Column(db.Boolean())
-    veteran_owned = Column(db.Boolean())
-    woman_owned = Column(db.Boolean())
-    disadvantaged_owned = Column(db.Boolean())
-    categories = db.relationship(
-        'Category',
-        secondary=category_vendor_association_table,
-        backref='vendors',
-        collection_class=set
-    )
-    opportunities = db.relationship(
-        'Opportunity',
-        secondary=opportunity_vendor_association_table,
-        backref='vendors',
-        collection_class=set
-    )
-
-    subscribed_to_newsletter = Column(db.Boolean(), default=False, nullable=False)
-
-    @classmethod
-    def newsletter_subscribers(cls):
-        '''Query to return all vendors signed up to the newsletter
+    def submissions_page_exists(self):
+        '''Returns a boolean for whether or not a submissions page exists
         '''
-        return cls.query.filter(cls.subscribed_to_newsletter == True).all()
+        return False
 
-    def build_downloadable_row(self):
-        '''Take a Vendor object and build a list for a .tsv download
-
-        Returns:
-            List of all vendor fields in order for a bulk vendor download
+    def render_submissions_html(self):
+        '''Render submission page for individual vendor
         '''
-        return [
-            self.first_name, self.last_name, self.business_name,
-            self.email, self.phone_number, self.minority_owned,
-            self.woman_owned, self.veteran_owned, self.disadvantaged_owned,
-            build_downloadable_groups('category_friendly_name', self.categories),
-            build_downloadable_groups('title', self.opportunities)
-        ]
+        raise NotImplementedError
 
-    def __unicode__(self):
-        return self.email
+    def submissions_nav_url(self):
+        '''Render submissions link in navbar
+        '''
+        raise NotImplementedError

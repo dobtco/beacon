@@ -77,7 +77,6 @@ class DevConfig(Config):
     ASSETS_DEBUG = True
     UPLOAD_S3 = False
     UPLOAD_DESTINATION = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'uploads'))
-    # MAIL_SUPPRESS_SEND = False
     # CELERY_BROKER_URL = os_env.get('REDIS_URL', 'redis://localhost:6379/0')
     # CELERY_RESULT_BACKEND = os_env.get('REDIS_URL', 'redis://localhost:6379/0')
     CELERY_ALWAYS_EAGER = True

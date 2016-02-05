@@ -10,7 +10,9 @@
   <h3><strong>{{ opportunity.title }}</strong></h3>
   <ul class="nav nav-tabs">
     <li role="presentation" class="{% if active == 'questions' %}active{% endif %}"><a href="{{ url_for('beacon_admin.questions', opportunity_id=opportunity.id) }}">Questions</a></li>
-    <li role="presentation" class="{% if active == 'submissions' %}active{% endif %}"><a href="https://screendoor.dobt.co/sign_in" target="_blank">Submissions</a></li>
+    {% if opportunity.submissions_page_exists() %}
+    <li role="presentation" class="{% if active == 'submissions' %}active{% endif %}"><a href="{{ opportunity.submissions_nav_url() }}" target="_blank">Submissions</a></li>
+    {% endif %}
     <li role="presentation" class="pull-right {% if active == 'view' %}active{% endif %}">
       <a href="{{ url_for('front.detail', opportunity_id=opportunity.id) }}">View</a>
     </li>
@@ -116,7 +118,7 @@
     <div class="form-group">
       <label class="control-label">{{ field.label }} {% if required != '' %}<span class="form-required">*</span>{% endif %}</label>
       {% if help_block != '' %}
-      <p class="help-block">{{ help_block }}</p>
+      <p class="help-block" id="{{ field.label.field_id|lower }}-help-block">{{ help_block }}</p>
       {% endif %}
       {{ field(class=css_class, **kwargs) }}
     </div>
@@ -125,7 +127,7 @@
     <div class="form-group">
       <label class="control-label">{{ field.label }} {% if required != '' %}<span class="form-required">*</span>{% endif %}</label>
       {% if help_block != '' %}
-      <p class="help-block">{{ help_block }}</p>
+      <p class="help-block" id="{{ field.label.field_id|lower }}-help-block">{{ help_block }}</p>
       {% endif %}
       {{ field(**kwargs) }}
     </div>

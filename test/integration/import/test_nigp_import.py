@@ -4,7 +4,7 @@ from flask import current_app
 from test.test_base import BaseTestCase
 
 from beacon.importer.nigp import main
-from beacon.models.opportunities import Category
+from beacon.models.vendors import Category
 
 class TestNigpImport(BaseTestCase):
     def test_nigp_import(self):

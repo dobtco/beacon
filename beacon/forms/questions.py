@@ -9,7 +9,7 @@ from wtforms.validators import DataRequired, Email
 
 from beacon.database import db
 from beacon.notifications import Notification
-from beacon.models.opportunities import Vendor
+from beacon.models.vendors import Vendor
 from beacon.models.questions import Question
 
 class QuestionForm(Form):

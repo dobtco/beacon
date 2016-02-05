@@ -7,7 +7,8 @@ from beacon.extensions import db
 from beacon.notifications import Notification
 from beacon.jobs.job_base import JobBase, EmailJobBase
 
-from beacon.models.opportunities import Opportunity, Vendor, Category
+from beacon.models.vendors import Vendor, Category
+from beacon.models.opportunities.base import Opportunity
 from beacon.models.public import AppStatus
 
 @JobBase.register

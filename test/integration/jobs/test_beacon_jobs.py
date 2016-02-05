@@ -7,7 +7,7 @@ from mock import patch, Mock
 from beacon.extensions import mail
 
 from beacon.models.public import AppStatus
-from beacon.models.opportunities import Opportunity
+from beacon.models.opportunities.base import Opportunity
 from beacon.jobs.beacon_nightly import BeaconNewOppotunityOpenJob, BeaconBiweeklyDigestJob
 from beacon.jobs.job_base import JobStatus
 

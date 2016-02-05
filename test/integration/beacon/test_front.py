@@ -6,7 +6,7 @@ from flask import current_app, url_for
 from werkzeug.datastructures import MultiDict
 
 from beacon.extensions import mail, db
-from beacon.models.opportunities import Vendor
+from beacon.models.vendors import Vendor
 from beacon.models.questions import Question
 
 from test.integration.beacon.test_base import (

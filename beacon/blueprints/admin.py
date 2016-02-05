@@ -2,7 +2,7 @@
 
 from beacon.extensions import admin, db, AuthMixin
 
-from beacon.models.opportunities import RequiredBidDocument
+from beacon.models.opportunities.documents import RequiredBidDocument
 from beacon.models.users import User, Department
 from beacon.models.public import AcceptedEmailDomains
 

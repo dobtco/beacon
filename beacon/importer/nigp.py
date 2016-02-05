@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from beacon.database import db, get_or_create
-from beacon.models.opportunities import Category
+from beacon.models.vendors import Category
 from beacon.importer import extract, convert_empty_to_none
 
 def parse_codes(codes):

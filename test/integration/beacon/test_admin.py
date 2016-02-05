@@ -12,7 +12,10 @@ from flask import current_app
 from beacon.database import db
 from beacon.extensions import mail
 from beacon.models.users import User
-from beacon.models.opportunities import Opportunity, Vendor, Category, OpportunityDocument
+from beacon.models.opportunities.base import Opportunity
+from beacon.models.opportunities.documents import OpportunityDocument
+from beacon.models.vendors import Vendor, Category
+
 from beacon.models.questions import Question
 from beacon.forms.opportunities import OpportunityDocumentForm
 
@@ -47,7 +50,7 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
             'planned_submission_end': datetime.date.today() + datetime.timedelta(5),
             'is_public': False, 'subcategories-1': 'on', 'subcategories-2': 'on',
             'subcategories-3': 'on', 'subcategories-4': 'on',
-            'opportunity_type': self.opportunity_type.id
+            'type': 'Opportunity'
         }
 
         self.client.post('/beacon/admin/opportunities/new', data=data)
@@ -87,12 +90,13 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
             'planned_submission_start': datetime.date.today(),
             'planned_submission_end': datetime.date.today() + datetime.timedelta(5),
             'is_public': False, 'subcategories-{}'.format(Category.query.first().id): 'on',
-            'opportunity_type': self.opportunity_type.id
+            'type': 'Opportunity'
         }
+
 
         # assert that we create a new user when we build with a new email
         self.assertEquals(User.query.count(), 2)
-        self.client.post('/beacon/admin/opportunities/new', data=data)
+        test = self.client.post('/beacon/admin/opportunities/new', data=data)
         self.assertEquals(User.query.count(), 2)
 
     def test_build_opportunity_new_user(self):
@@ -105,7 +109,7 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
             'planned_submission_start': datetime.date.today(),
             'planned_submission_end': datetime.date.today() + datetime.timedelta(5),
             'is_public': False, 'subcategories-{}'.format(Category.query.first().id): 'on',
-            'opportunity_type': self.opportunity_type.id
+            'type': 'Opportunity'
         }
 
         # assert that we create a new user when we build with a new email
@@ -129,7 +133,7 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
             'planned_submission_start': datetime.date.today(),
             'planned_submission_end': datetime.date.today() + datetime.timedelta(1),
             'save_type': 'save', 'subcategories-{}'.format(Category.query.first().id): 'on',
-            'opportunity_type': self.opportunity_type.id
+            'type': 'Opportunity'
         }
 
         # assert that you need a title & description
@@ -188,7 +192,7 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
             'is_public': True, 'description': 'Updated Contract!', 'save_type': 'public',
             'contact_email': self.admin.email, 'department': self.department1.id,
             'subcategories-{}'.format(Category.query.all()[-1].id): 'on',
-            'opportunity_type': self.opportunity_type.id
+            'type': 'Opportunity'
         })
 
         self.assert200(self.client.get('/opportunities'))
@@ -395,7 +399,7 @@ class TestOpportunityPublic(TestOpportunitiesAdminBase):
                 'planned_submission_start': datetime.date.today(),
                 'planned_submission_end': datetime.date.today() + datetime.timedelta(days=5),
                 'save_type': 'publish', 'subcategories-{}'.format(Category.query.all()[-1].id): 'on',
-                'opportunity_type': self.opportunity_type.id
+                'type': 'Opportunity'
             })
 
             self.assertEquals(Opportunity.query.count(), 5)
@@ -412,7 +416,7 @@ class TestOpportunityPublic(TestOpportunitiesAdminBase):
             'planned_submission_start': datetime.date.today(),
             'planned_submission_end': datetime.date.today() + datetime.timedelta(days=5),
             'save_type': 'save', 'subcategories-{}'.format(Category.query.all()[-1].id): 'on',
-            'opportunity_type': self.opportunity_type.id
+            'type': 'Opportunity'
         }
 
         self.login_user(self.admin)
@@ -442,7 +446,7 @@ class TestOpportunityPublic(TestOpportunitiesAdminBase):
             'planned_submission_start': datetime.date.today(),
             'planned_submission_end': datetime.date.today() + datetime.timedelta(days=5),
             'save_type': 'save', 'subcategories-{}'.format(Category.query.all()[-1].id): 'on',
-            'opportunity_type': self.opportunity_type.id
+            'type': 'Opportunity'
         }
 
         self.login_user(self.admin)

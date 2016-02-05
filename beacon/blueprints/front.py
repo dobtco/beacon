@@ -16,7 +16,8 @@ from beacon.forms.opportunities import (
 )
 from beacon.forms.questions import QuestionForm
 
-from beacon.models.opportunities import Category, Opportunity, Vendor
+from beacon.models.vendors import Category, Vendor
+from beacon.models.opportunities.base import Opportunity
 
 from beacon.blueprints.view_util import init_form, signup_for_opp
 
@@ -299,4 +300,14 @@ def detail(opportunity_id):
             question_form=question_form,
             questions=opportunity.get_answered_questions()
         )
+    abort(404)
+
+@blueprint.route('/opportunities/<int:opportunity_id>/propose')
+def new_proposal(opportunity_id):
+    opportunity = Opportunity.query.get(opportunity_id)
+    if opportunity and opportunity.submissions_page_exists():
+        current_app.logger.info('BEACON FRONT NEW PROPOSAL | Opportunity {} (ID: {})'.format(
+            opportunity.title.encode('ascii', 'ignore'), opportunity.id
+        ))
+        return render_template('beacon/front/submissions.html', opportunity=opportunity)
     abort(404)

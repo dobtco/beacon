@@ -124,7 +124,7 @@ class TestOpportunityModel(TestCase):
         opportunity = OpportunityFactory.build()
         self.assertEquals(opportunity.get_vendor_documents(), [])
 
-    @patch('beacon.models.opportunities.RequiredBidDocument.query')
+    @patch('beacon.models.opportunities.documents.RequiredBidDocument.query')
     def test_vendor_documents_needed_with_docs(self, query):
         opportunity = OpportunityFactory.build(vendor_documents_needed=[1])
         opportunity.get_vendor_documents()
@@ -176,7 +176,7 @@ class TestOpportunityModel(TestCase):
             enable_qa=False
         )
         self.assertFalse(qa_disabled.accepting_questions)
-        self.assertTrue(qa_disabled.qa_closed)
+        self.assertFalse(qa_disabled.qa_closed)
 
     def test_opportunity_qa_closed(self):
         closed_opp = OpportunityFactory.build(
