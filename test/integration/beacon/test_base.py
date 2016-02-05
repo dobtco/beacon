@@ -57,28 +57,29 @@ class TestOpportunitiesAdminBase(BaseTestCase):
             planned_submission_end=datetime.datetime.today() + datetime.timedelta(2),
             vendor_documents_needed=[self.document.id],
             categories=(Category.query.first(),)
-        )
+        ).save()
         self.opportunity2 = OpportunityFactory.create(
             contact=self.admin, created_by=self.staff,
             is_public=True, is_archived=False, planned_publish=datetime.date.today(),
             planned_submission_start=datetime.date.today() + datetime.timedelta(2),
             planned_submission_end=datetime.datetime.today() + datetime.timedelta(2),
-            categories=(Category.query.first(),)
-        )
+            categories=(Category.query.first(),), enable_qa=False, qa_start=None,
+            qa_end=None
+        ).save()
         self.opportunity3 = OpportunityFactory.create(
             contact=self.admin, created_by=self.staff,
             is_public=True, is_archived=False, planned_publish=datetime.date.today() - datetime.timedelta(2),
             planned_submission_start=datetime.date.today() - datetime.timedelta(2),
             planned_submission_end=datetime.datetime.today() - datetime.timedelta(1),
             categories=(Category.query.first(),)
-        )
+        ).save()
         self.opportunity4 = OpportunityFactory.create(
             contact=self.admin, created_by=self.staff,
             is_public=True, is_archived=False, planned_publish=datetime.date.today() - datetime.timedelta(1),
             planned_submission_start=datetime.date.today(),
             planned_submission_end=datetime.datetime.today() + datetime.timedelta(2),
             title='TEST TITLE!', categories=(Category.query.first(),)
-        )
+        ).save()
 
     def tearDown(self):
         super(TestOpportunitiesAdminBase, self).tearDown()

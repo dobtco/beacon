@@ -1,0 +1,20 @@
+{% extends "beacon/layout.html" %}
+{% import "macros/_renderers.html" as macros %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+
+      {% include "includes/flashes.html" %}
+
+      {{ macros.render_opportunity_nav(opportunity, 'questions') }}
+
+      {{ macros.render_questions('unanswered', unanswered, opportunity.id) }}
+      <hr>
+      {{ macros.render_questions('answered', answered, opportunity.id) }}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

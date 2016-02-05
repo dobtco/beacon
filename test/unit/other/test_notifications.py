@@ -19,7 +19,7 @@ class TestNotification(TestCase):
         )
         self.assertEquals(notification.to_email, ['foobar@bar.com'])
         self.assertEquals(notification.from_email, 'foo@foo.com')
-        self.assertEquals(notification.cc_email, ['bazbar@bar.com', 'foobar@foo.com'])
+        self.assertListEqual(notification.cc_email, ['bazbar@bar.com', 'foobar@foo.com'])
         self.assertEquals(notification.subject, '')
         self.assertEquals(notification.html_body, 'a test')
         self.assertEquals(notification.txt_body, '')
@@ -43,13 +43,13 @@ class TestNotification(TestCase):
         '''
         notification = Notification(to_email='foobar@foo.com', from_email='foo@foo.com')
         test_recips = [('a',), ('multi',), ['nested', 'thing']]
-        self.assertEquals(
+        self.assertListEqual(
             ['a', 'multi', 'nested', 'thing'],
             notification.flatten(test_recips)
         )
 
         test_recips_complex = ['a', ['b', ['c', 'd']], ['e']]
-        self.assertEquals(
+        self.assertListEqual(
             ['a', 'b', 'c', 'd', 'e'],
             notification.flatten(test_recips_complex)
         )

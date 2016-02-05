@@ -148,6 +148,7 @@ class Notification(object):
         if isinstance(recipient, str) or isinstance(recipient, unicode):
             recipient = [recipient]
         elif isinstance(recipient, collections.Iterable):
+            recipient = set(recipient)
             recipient = self.flatten(recipient)
         else:
             raise Exception('Unsupported recipient type: {}'.format(type(recipient)))
@@ -170,7 +171,7 @@ class Notification(object):
             )
 
             msg = Message(
-                subject='[Pittsburgh Purchasing] {}'.format(self.subject),
+                subject='[Beacon] {}'.format(self.subject),
                 html=self.html_body, body=self.txt_body,
                 sender=self.from_email, reply_to=self.reply_to,
                 recipients=self.handle_recipients(recipient), cc=self.cc_email

@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from werkzeug import secure_filename
 
-from flask import current_app, request
+from flask import current_app, request, flash, redirect, url_for
 from flask_wtf import Form
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import widgets, fields, Form as NoCSRFForm
@@ -20,9 +20,9 @@ from wtforms.ext.sqlalchemy.fields import QuerySelectField, QuerySelectMultipleF
 
 from beacon.models.opportunities import Category, RequiredBidDocument, OpportunityType
 
-from beacon.utils import RequiredIf
+from beacon.utils import RequiredIf, RequiredDateAfter, RequiredDateBefore
 from beacon.models.users import Department
-from beacon.blueprints.view_util import parse_contact, select_multi_checkbox
+from beacon.blueprints.view_util import parse_contact, select_multi_checkbox, signup_for_opp
 from beacon.forms.validators import (
     email_present, city_domain_email, max_words,
     after_now, validate_phone_number
@@ -235,7 +235,7 @@ class VendorSignupForm(CategoryForm):
         subscribed_to_newsletter: Boolean flag for whether a business
             is signed up to the receive the newsletter
     '''
-    business_name = fields.TextField(validators=[DataRequired()])
+    business_name = fields.TextField("What's the name of your business?", validators=[DataRequired()])
     email = fields.TextField(validators=[DataRequired(), Email()])
     first_name = fields.TextField()
     last_name = fields.TextField()
@@ -259,9 +259,15 @@ class OpportunitySignupForm(Form):
         also_categories: Flag for whether or not a business should be signed up
             to receive updates about opportunities with the same categories as this one
     '''
-    business_name = fields.TextField(validators=[DataRequired()])
-    email = fields.TextField(validators=[DataRequired(), Email()])
+    business_name = fields.TextField("What's the name of your business?", validators=[DataRequired()])
+    email = fields.TextField("What's your email address?", validators=[DataRequired(), Email()])
     also_categories = fields.BooleanField()
+
+    def post_validate_action(self, opportunity):
+        signup_success = signup_for_opp(self, opportunity)
+        if signup_success:
+            flash('Successfully subscribed for updates!', 'alert-success')
+            return redirect(url_for('front.detail', opportunity_id=opportunity.id))
 
 class UnsubscribeForm(Form):
     '''Subscription management form, where Vendors can unsubscribe from all different emails
@@ -359,6 +365,9 @@ class OpportunityForm(CategoryForm):
         planned_submission_start: Date when the opportunity opens to accept responses
         planned_submission_end: Date when the opportunity closes and no longer
             accepts submissions
+        enable_qa: Whether or not to accept questions/answers on this Opportunity
+        qa_start: Date to start accepting questions
+        qa_end: Date to end accepting questions
         vendor_documents_needed: A multicheckbox for all documents that a vendor
             might need to respond to this opportunity.
         documents: A list of :py:class:`~purchasing.forms.front.OpportunityDocumentForm`
@@ -389,9 +398,39 @@ class OpportunityForm(CategoryForm):
     contact_email = fields.TextField(validators=[Email(), city_domain_email, DataRequired()])
     title = fields.TextField(validators=[DataRequired()])
     description = fields.TextAreaField(validators=[max_words(), DataRequired()])
-    planned_publish = fields.DateField(validators=[DataRequired()])
-    planned_submission_start = fields.DateField(validators=[DataRequired()])
-    planned_submission_end = DateTimeField(validators=[after_now, DataRequired()])
+    planned_publish = fields.DateField(
+        'Publish Date', validators=[
+            DataRequired(), RequiredDateBefore('planned_submission_start')
+        ]
+    )
+    planned_submission_start = fields.DateField(
+        'Submission Start Date', validators=[
+            DataRequired(), RequiredDateBefore('planned_submission_end')
+        ]
+    )
+    planned_submission_end = DateTimeField(
+        'Submission End Date',
+        validators=[
+            after_now, DataRequired(),
+            RequiredDateAfter('planned_submission_start')
+        ]
+    )
+
+    enable_qa = fields.BooleanField('Enable Q&A')
+    qa_start = fields.DateField(
+        'Q&A Start Date',
+        validators=[
+            RequiredIf('enable_qa'), RequiredDateBefore('qa_end'), Optional()
+        ]
+    )
+    qa_end = fields.DateField(
+        'Q&A End Date',
+        validators=[
+            RequiredIf('enable_qa'), RequiredDateAfter('qa_start'),
+            RequiredDateBefore('planned_submission_end'), Optional()
+        ]
+    )
+
     vendor_documents_needed = QuerySelectMultipleField(
         widget=select_multi_checkbox,
         query_factory=RequiredBidDocument.generate_choices,

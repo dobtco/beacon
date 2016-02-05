@@ -1,6 +1,6 @@
 {% extends "security/base.html" %}
 {% from "security/_macros.html" import render_field %}
-{% import "macros/with_errors.html" as macros %}
+{% import "macros/_renderers.html" as macros %}
 
 {% block form %}
 
@@ -16,7 +16,7 @@
     {{ macros.render_form_field_with_errors(register_user_form.password_confirm, class_="form-control", required="true") }}
   {% endif %}
 
-  {{ render_field(register_user_form.submit, class_="btn btn-success") }}
+  {{ render_field(register_user_form.submit, class_="btn btn-primary") }}
 
 </form>
 {% include "security/_menu.html" %}

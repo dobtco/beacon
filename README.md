@@ -112,8 +112,6 @@ python manage.py seed_user -e <your-email-here> -r <your-desired-role> -p <your-
 
 **WARNING** The password you create on seeding will be stored as plaintext. Please reset this password as soon as possible!
 
-Now, logging in through persona should also give you access to the app.
-
 **up and running**
 
 If you boot up the app right now, it will have no data. If you want to add some data, a small manage task has been added to allow for quick data importation.

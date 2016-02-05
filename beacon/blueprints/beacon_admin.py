@@ -6,12 +6,14 @@ from flask import (
     render_template, url_for, Response, stream_with_context,
     redirect, flash, abort, request, current_app, Blueprint
 )
-from flask_security import current_user, roles_accepted
+from flask_security import current_user, roles_accepted, utils as sec_utils
 
 from beacon.database import db
 
 from beacon.models.opportunities import Opportunity, Vendor, OpportunityDocument
+from beacon.models.questions import Question
 from beacon.forms.opportunities import OpportunityForm
+from beacon.forms.questions import AnswerForm
 
 from beacon.notifications import Notification
 
@@ -77,9 +79,9 @@ def edit(opportunity_id):
                     opportunity_data, current_user,
                     form.documents, request.form.get('save_type') == 'publish'
                 )
-                db.session.commit()
+                opportunity.save()
                 opportunity.send_publish_email()
-                db.session.commit()
+                opportunity.save()
                 flash('Opportunity successfully updated!', 'alert-success')
 
                 return redirect(url_for('beacon_admin.edit', opportunity_id=opportunity.id))
@@ -96,6 +98,84 @@ def edit(opportunity_id):
         flash('This opportunity has been locked for editing by OMB.', 'alert-warning')
         return redirect(url_for('front.detail', opportunity_id=opportunity_id))
     abort(404)
+
+@blueprint.route('/opportunities/<int:opportunity_id>/questions')
+@roles_accepted('staff', 'approver', 'admin')
+def questions(opportunity_id):
+    opportunity = Opportunity.query.get(opportunity_id)
+    if opportunity:
+        if not opportunity.can_edit(current_user):
+            sec_utils.do_flash(*sec_utils.get_message('UNAUTHORIZED'))
+            return redirect('/')
+        answered, unanswered = [], []
+        for question in opportunity.questions:
+            if question.answer_text:
+                answered.append(question)
+            else:
+                unanswered.append(question)
+        return render_template(
+            'beacon/admin/questions.html', unanswered=unanswered,
+            answered=answered, opportunity=opportunity,
+        )
+    abort(404)
+
+@blueprint.route('/opportunities/<int:opportunity_id>/questions/<int:question_id>', methods=['GET', 'POST'])
+@roles_accepted('staff', 'approver', 'admin')
+def answer_question(opportunity_id, question_id):
+    question = Question.query.get(question_id)
+    if question:
+        if not question.opportunity.can_edit(current_user):
+            sec_utils.do_flash(*sec_utils.get_message('UNAUTHORIZED'))
+            return redirect('/')
+        form = AnswerForm(obj=question)
+        if form.validate_on_submit():
+            answer = {'answer_text': form.answer_text.data}
+            if question.answer_text:
+                answer['edited'] = True
+                answer['edited_at'] = datetime.datetime.utcnow()
+                question.update(**answer)
+                flash('Answer successfully edited.')
+            else:
+                answer['answered_at'] = datetime.datetime.utcnow()
+                answer['answered_by'] = current_user
+                question.update(**answer)
+                flash('This question has been answered! The Vendor has been notified and the question and answer are now public.')
+
+                to_email = set([
+                    question.opportunity.created_by.email,
+                    question.opportunity.contact.email,
+                    question.asked_by.email
+                ]).difference(set([current_user.email]))
+
+                Notification(
+                    to_email=list(to_email),
+                    subject='New answer to a questio on Beacon',
+                    html_template='beacon/emails/answered_question.html',
+                    txt_template='beacon/emails/answered_question.txt',
+                    question=question
+                ).send(multi=True)
+
+            return redirect(
+                url_for('beacon_admin.questions', opportunity_id=opportunity_id)
+            )
+
+        return render_template(
+            'beacon/admin/answer_question.html', form=form,
+            question=question, opportunity_id=opportunity_id
+        )
+    abort(404)
+
+@blueprint.route('/opportunities/<int:opportunity_id>/questions/<int:question_id>/delete')
+@roles_accepted('staff', 'approver', 'admin')
+def delete_question(opportunity_id, question_id):
+    question = Question.query.get(question_id)
+    if question:
+        if not question.opportunity.can_edit(current_user):
+            sec_utils.do_flash(*sec_utils.get_message('UNAUTHORIZED'))
+            return redirect('/')
+        question.delete()
+        flash('Question successfully deleted', 'alert-info')
+        return redirect(url_for('beacon_admin.questions', opportunity_id=opportunity_id))
 
 @blueprint.route('/opportunities/<int:opportunity_id>/document/<int:document_id>/remove')
 @roles_accepted('staff', 'approver', 'admin')
@@ -162,7 +242,7 @@ def publish(opportunity_id):
             opportunity=opportunity
         ).send(multi=True)
 
-        db.session.commit()
+        opportunity.save()
 
         current_app.logger.info(
             '''BEACON APPROVED: ID: {} | Title: {} | Publish Date: {} | Submission Start Date: {} | Submission End Date: {} '''.format(

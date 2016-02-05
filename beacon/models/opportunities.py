@@ -16,6 +16,7 @@ from sqlalchemy.dialects.postgresql import TSVECTOR
 from beacon.notifications import Notification
 from beacon.utils import build_downloadable_groups, random_id
 from beacon.models.users import User, Role
+from beacon.models.questions import Question
 
 category_vendor_association_table = Table(
     'category_vendor_association', Model.metadata,
@@ -137,6 +138,10 @@ class Opportunity(Model):
             responses to the opportunity
         planned_submission_end: Deadline for submitted responses to the
             Opportunity
+        enable_qa: Flag for whether or not questions/answers are enabled
+            for this Opportunity
+        qa_start: Start date for accepting questions from vendors
+        qa_end: End date for accepting questions from vendors
         vendor_documents_needed: Array of integers that relate to
             :py:class:`~purchasing.models.front.RequiredBidDocument` ids
         is_public: True if opportunity is approved (publicly visible), False otherwise
@@ -167,10 +172,17 @@ class Opportunity(Model):
     id = Column(db.Integer, primary_key=True)
     title = Column(db.String(255))
     description = Column(db.Text)
+
     planned_publish = Column(db.DateTime, nullable=False)
     planned_submission_start = Column(db.DateTime, nullable=False)
     planned_submission_end = Column(db.DateTime, nullable=False)
+
+    enable_qa = Column(db.Boolean, nullable=False, default=True)
+    qa_start = Column(db.DateTime)
+    qa_end = Column(db.DateTime)
+
     vendor_documents_needed = Column(ARRAY(db.Integer()))
+
     is_public = Column(db.Boolean(), default=False)
     is_archived = Column(db.Boolean(), default=False, nullable=False)
 
@@ -200,6 +212,24 @@ class Opportunity(Model):
         'OpportunityType', backref=backref('opportunities', lazy='dynamic'),
     )
 
+    @property
+    def accepting_questions(self):
+        if self.qa_start is None or self.qa_end is None:
+            return False
+        return all([
+            self.enable_qa,
+            datetime.datetime.today() >= self.qa_start,
+            datetime.datetime.today() <= self.qa_end
+        ])
+
+    @property
+    def qa_closed(self):
+        if self.qa_start is None or self.qa_end is None:
+            return True
+        if not self.enable_qa:
+            return True
+        return datetime.datetime.today() > self.qa_end
+
     @classmethod
     def create(cls, data, user, documents, publish=False):
         '''Create a new opportunity
@@ -222,7 +252,7 @@ class Opportunity(Model):
             have more information about the documents.
 
         '''
-        opportunity = Opportunity(**data)
+        opportunity = super(Opportunity, cls).create(**data)
 
         current_app.logger.info(
 '''BEACON NEW - New Opportunity Created: Department: {} | Title: {} | Publish Date: {} | Submission Start Date: {} | Submission End Date: {}
@@ -460,13 +490,8 @@ class Opportunity(Model):
             if publish:
                 self.is_public = True
 
-    def notify_approvals(self, user):
-        '''Send the approval notifications to everyone with approval rights
-
-        Arguments:
-            user: A :py:class:`~purchasing.models.users.User` object
-        '''
-        Notification(
+    def _notify_user(self, user):
+        return Notification(
             to_email=[user.email],
             subject='Your post has been sent to OMB for approval',
             html_template='beacon/emails/staff_postsubmitted.html',
@@ -474,7 +499,8 @@ class Opportunity(Model):
             opportunity=self
         ).send(multi=True)
 
-        Notification(
+    def _notify_admins(self):
+        return Notification(
             to_email=db.session.query(User.email).filter(
                 User.roles.any(Role.name.in_(['conductor', 'admin', 'superadmin']))
             ).all(),
@@ -483,6 +509,19 @@ class Opportunity(Model):
             txt_template='beacon/emails/admin_postforapproval.txt',
             opportunity=self
         ).send(multi=True)
+
+    def notify_approvals(self, user):
+        '''Send the approval notifications to everyone with approval rights
+
+        Arguments:
+            user: A :py:class:`~purchasing.models.users.User` object
+        '''
+        self._notify_user(user)
+        # re-add the opportunity to the session -- it's popped by
+        # the celery task
+        db.session.add(self)
+        self._notify_admins()
+        return True
 
     def get_category_ids(self):
         '''Returns the IDs from the Opportunity's related categories
@@ -506,7 +545,7 @@ class Opportunity(Model):
 
             Notification(
                 to_email=[i.email for i in vendors],
-                subject='A new City of Pittsburgh opportunity from Beacon!',
+                subject='A new opportunity from Beacon!',
                 html_template='beacon/emails/newopp.html',
                 txt_template='beacon/emails/newopp.txt',
                 opportunity=self
@@ -522,8 +561,14 @@ class Opportunity(Model):
                     str(self.planned_submission_start), str(self.planned_submission_end)
                 )
             )
-            return True
-        return False
+            return self
+        return self
+
+    def get_answered_questions(self):
+        return Question.query.filter(
+            Question.opportunity_id == self.id,
+            Question.answer_text != None
+        ).all()
 
 class OpportunityDocument(Model):
     '''Model for bid documents associated with opportunities
