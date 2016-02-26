@@ -1,4 +1,4 @@
-Copyright Ben Smithgall 2015-2016.
+Copyright Department of Better Technology / Ben Smithgall 2015-2016.
 
 All rights reserved.
 

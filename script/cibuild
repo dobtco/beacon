@@ -1,0 +1,3 @@
+#!/bin/sh
+
+PYTHONPATH=. nosetests test/ -v --with-coverage --cover-package=beacon --cover-erase --cover-html

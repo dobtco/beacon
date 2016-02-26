@@ -64,3 +64,6 @@ log
 
 # File uploads
 uploads
+
+# Test coverage
+cover/
