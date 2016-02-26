@@ -112,5 +112,6 @@ class ScreendoorOpportunity(Opportunity):
         )
 
     def submissions_nav_url(self):
-        return 'https://screendoor.dobt.co/sign_in'
-
+        return ('https://screendoor.dobt.co/projects/' +
+                self.submission_data['embed_token'] +
+                '/admin')
