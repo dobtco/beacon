@@ -94,7 +94,6 @@ def signup():
             confirmation_sent = Notification(
                 to_email=vendor.email, subject='Thank you for signing up!',
                 html_template='beacon/emails/signup.html',
-                txt_template='beacon/emails/signup.txt',
                 categories=form.data['categories']
             ).send()
 

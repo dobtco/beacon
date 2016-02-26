@@ -193,7 +193,6 @@ def signup_for_opp(form, opportunity, multi=False):
             from_email=current_app.config['BEACON_SENDER'],
             subject='Subscription confirmation from Beacon',
             html_template='beacon/emails/oppselected.html',
-            txt_template='beacon/emails/oppselected.txt',
             opportunities=email_opportunities
         ).send()
 

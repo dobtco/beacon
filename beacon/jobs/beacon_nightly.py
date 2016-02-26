@@ -38,7 +38,6 @@ class BeaconNewOppotunityOpenJob(EmailJobBase):
                     from_email=current_app.config['BEACON_SENDER'],
                     subject='A new opportunity from Beacon!',
                     html_template='beacon/emails/newopp.html',
-                    txt_template='beacon/emails/newopp.txt',
                     opportunity=opportunity
                 )
             )
@@ -96,7 +95,6 @@ class BeaconBiweeklyDigestJob(EmailJobBase):
                 from_email=current_app.config['BEACON_SENDER'],
                 subject='Your biweekly Beacon opportunity summary',
                 html_template='beacon/emails/biweeklydigest.html',
-                txt_template='beacon/emails/biweeklydigest.txt',
                 opportunities=opportunities
             )
         )

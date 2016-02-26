@@ -442,7 +442,6 @@ class Opportunity(Model):
             to_email=[user.email],
             subject='Your post has been sent to OMB for approval',
             html_template='beacon/emails/staff_postsubmitted.html',
-            txt_template='beacon/emails/staff_postsubmitted.txt',
             opportunity=self
         ).send(multi=True)
 
@@ -453,7 +452,6 @@ class Opportunity(Model):
             ).all(),
             subject='A new Beacon post needs review',
             html_template='beacon/emails/admin_postforapproval.html',
-            txt_template='beacon/emails/admin_postforapproval.txt',
             opportunity=self
         ).send(multi=True)
 
@@ -494,7 +492,6 @@ class Opportunity(Model):
                 to_email=[i.email for i in vendors],
                 subject='A new opportunity from Beacon!',
                 html_template='beacon/emails/newopp.html',
-                txt_template='beacon/emails/newopp.txt',
                 opportunity=self
             ).send(multi=True)
 

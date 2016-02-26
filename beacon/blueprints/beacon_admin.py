@@ -156,7 +156,6 @@ def answer_question(opportunity_id, question_id):
                     to_email=list(to_email),
                     subject='New answer to a questio on Beacon',
                     html_template='beacon/emails/answered_question.html',
-                    txt_template='beacon/emails/answered_question.txt',
                     question=question
                 ).send(multi=True)
 
@@ -243,7 +242,6 @@ def publish(opportunity_id):
             to_email=[to_email],
             subject='OMB approved your opportunity post!',
             html_template='beacon/emails/staff_postapproved.html',
-            txt_template='beacon/emails/staff_postapproved.txt',
             opportunity=opportunity
         ).send(multi=True)
 
