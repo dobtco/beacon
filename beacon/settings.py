@@ -7,7 +7,7 @@ os_env = os.environ
 PROJECT_ROOT = os.path.abspath(os.path.join(HERE, os.pardir))
 
 class Config(object):
-    SECRET_KEY = os_env.get('BEACON_SECRET', 'secret-key')  # TODO: Change me
+    SECRET_KEY = os_env.get('BEACON_SECRET', 'secret-key')
     APP_DIR = HERE
     ASSETS_DEBUG = False
     DEBUG_TB_ENABLED = False  # Disable Debug toolbar
@@ -50,7 +50,7 @@ class ProdConfig(Config):
     """Production configuration."""
     ENV = 'prod'
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os_env.get('DATABASE_URL', 'postgresql://localhost/beacon')  # TODO: Change me
+    SQLALCHEMY_DATABASE_URI = os_env.get('DATABASE_URL', 'postgresql://localhost/beacon')
     DEBUG_TB_ENABLED = False  # Disable Debug toolbar
     USE_S3 = True
     S3_USE_HTTPS = True
@@ -69,7 +69,7 @@ class DevConfig(Config):
     """Development configuration."""
     ENV = 'dev'
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os_env.get('DATABASE_URL', 'postgresql://localhost/beacon')  # TODO: Change me
+    SQLALCHEMY_DATABASE_URI = os_env.get('DATABASE_URL', 'postgresql://localhost/beacon')
     SQLALCHEMY_ECHO = os_env.get('SQLALCHEMY_ECHO', False)
     DEBUG_TB_ENABLED = True
     BROWSERID_URL = os_env.get('BROWSERID_URL', 'http://127.0.0.1:9000')
