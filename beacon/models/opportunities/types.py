@@ -65,7 +65,13 @@ class ScreendoorOpportunity(Opportunity):
     def get_help_block(cls):
         return {
             cls.__name__:
-            'Create a new project on Screendoor and copy the project ID below.'
+            Markup(
+                '''<a href="{}" target='_blank'>Create a new project on Screendoor</a>
+                and copy the project ID below.
+                '''.format(
+                    'https://screendoor.dobt.co/projects/new'
+                )
+            )
         }
 
     @classmethod
