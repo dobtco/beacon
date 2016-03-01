@@ -85,6 +85,10 @@ def edit(opportunity_id):
                     form.documents, request.form.get('save_type') == 'publish'
                 )
                 opportunity.save()
+                # expunge all to clear reference to the opportunity
+                # and then re-query it
+                db.session.expunge_all()
+                opportunity = Opportunity.query.get(opportunity_id)
                 opportunity.send_publish_email()
                 opportunity.save()
                 flash('Opportunity successfully updated!', 'alert-success')

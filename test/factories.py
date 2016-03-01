@@ -9,7 +9,7 @@ from beacon.database import db
 from beacon.models.users import User, Role, Department
 from beacon.models.public import AcceptedEmailDomains
 
-from beacon.models.opportunities.base import Opportunity
+from beacon.models.opportunities.types import NoSubmissionOpportunity
 from beacon.models.opportunities.documents import (
     OpportunityDocument, RequiredBidDocument
 )
@@ -75,7 +75,7 @@ class OpportunityFactory(BaseFactory):
     enable_qa = True
     qa_start = datetime.datetime.today() - datetime.timedelta(days=1)
     qa_end = datetime.datetime.today() + datetime.timedelta(days=5)
-    type = 'Opportunity'
+    type = 'NoSubmissionOpportunity'
 
     @factory.post_generation
     def categories(self, create, extracted, **kwargs):
@@ -87,7 +87,7 @@ class OpportunityFactory(BaseFactory):
                 self.categories.add(category)
 
     class Meta:
-        model = Opportunity
+        model = NoSubmissionOpportunity
 
 class VendorFactory(BaseFactory):
     id = factory.Sequence(lambda n: n + 100)

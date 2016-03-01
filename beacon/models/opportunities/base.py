@@ -18,7 +18,7 @@ from beacon.utils import random_id
 from beacon.models.vendors import Vendor, Category
 from beacon.models.users import User, Role
 from beacon.models.questions import Question
-from beacon.models.opportunities.documents import RequiredBidDocument
+from beacon.models.opportunities.documents import RequiredBidDocument, OpportunityDocument
 
 category_opportunity_association_table = Table(
     'category_opportunity_association', Model.metadata,
@@ -235,14 +235,14 @@ class Opportunity(Model):
     @classmethod
     def get_types(cls):
         from beacon.models.opportunities import types
-        return [cls.get_opportunity_type()] + [
+        return [
             i.get_opportunity_type() for i in cls.__subclasses__()
         ]
 
     @classmethod
     def get_help_blocks(cls):
         from beacon.models.opportunities import types
-        help_block = Opportunity.get_help_block()
+        help_block = {}
         for i in Opportunity.__subclasses__():
             help_block.update(i.get_help_block())
         return help_block
@@ -250,16 +250,15 @@ class Opportunity(Model):
     @classmethod
     def get_opportunity_type(cls):
         '''
-
         Returns:
             Two-tuple of (type, label) to be used for rendering
             and selecting different opportunity types
         '''
-        return (cls.__name__, 'No online submissions')
+        raise NotImplementedError
 
     @classmethod
     def get_help_block(cls):
-        return {cls.__name__: 'No additional data is required.'}
+        raise NotImplementedError
 
     @property
     def is_published(self):
@@ -519,11 +518,11 @@ class Opportunity(Model):
 
     @classmethod
     def validate(self, form):
-        return True
+        raise NotImplementedError
 
     @classmethod
     def serialize_submission_data(self, submission_data):
-        return None
+        raise NotImplementedError
 
     def deserialize_submission_data(self):
         return None
