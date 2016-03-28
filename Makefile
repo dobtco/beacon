@@ -1,6 +1,7 @@
 install:
 	pip install -r requirements/dev.txt
 	npm install
+	npm install -g bower
 	bower install
 
 setup:
