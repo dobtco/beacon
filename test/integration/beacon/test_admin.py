@@ -50,7 +50,7 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
             'planned_submission_end': datetime.date.today() + datetime.timedelta(5),
             'is_public': False, 'subcategories-1': 'on', 'subcategories-2': 'on',
             'subcategories-3': 'on', 'subcategories-4': 'on',
-            'type': 'Opportunity'
+            'type': 'NoSubmissionOpportunity'
         }
 
         self.client.post('/beacon/admin/opportunities/new', data=data)
@@ -90,7 +90,7 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
             'planned_submission_start': datetime.date.today(),
             'planned_submission_end': datetime.date.today() + datetime.timedelta(5),
             'is_public': False, 'subcategories-{}'.format(Category.query.first().id): 'on',
-            'type': 'Opportunity'
+            'type': 'NoSubmissionOpportunity'
         }
 
 
@@ -109,7 +109,7 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
             'planned_submission_start': datetime.date.today(),
             'planned_submission_end': datetime.date.today() + datetime.timedelta(5),
             'is_public': False, 'subcategories-{}'.format(Category.query.first().id): 'on',
-            'type': 'Opportunity'
+            'type': 'NoSubmissionOpportunity'
         }
 
         # assert that we create a new user when we build with a new email
@@ -133,7 +133,7 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
             'planned_submission_start': datetime.date.today(),
             'planned_submission_end': datetime.date.today() + datetime.timedelta(1),
             'save_type': 'save', 'subcategories-{}'.format(Category.query.first().id): 'on',
-            'type': 'Opportunity'
+            'type': 'NoSubmissionOpportunity'
         }
 
         # assert that you need a title & description
@@ -171,6 +171,7 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
         )
 
     def test_edit_an_opportunity(self):
+        opportunity2_id = self.opportunity2.id
         self.assertEquals(len(self.opportunity2.categories), 1)
         self.assertEquals(self.client.get('/beacon/admin/opportunities/{}'.format(
             self.opportunity2.id
@@ -192,13 +193,40 @@ class TestOpportunityAdmin(TestOpportunitiesAdminBase):
             'is_public': True, 'description': 'Updated Contract!', 'save_type': 'public',
             'contact_email': self.admin.email, 'department': self.department1.id,
             'subcategories-{}'.format(Category.query.all()[-1].id): 'on',
-            'type': 'Opportunity'
+            'type': 'NoSubmissionOpportunity'
         })
+        opportunity2 = Opportunity.query.get(opportunity2_id)
 
         self.assert200(self.client.get('/opportunities'))
-        self.assertEquals(len(self.opportunity2.categories), 2)
+        self.assertEquals(len(opportunity2.categories), 2)
         self.assertEquals(len(self.get_context_variable('_open')), 2)
         self.assertEquals(len(self.get_context_variable('upcoming')), 0)
+
+    def test_change_document_type(self):
+        self.login_user(self.admin)
+        opp2_id = self.opportunity2.id
+        self.assertEquals(Opportunity.query.get(self.opportunity2.id).type, 'NoSubmissionOpportunity')
+        bad_email = self.client.post('/beacon/admin/opportunities/{}'.format(self.opportunity2.id), data={
+            'planned_submission_start': datetime.date.today(), 'title': 'Updated',
+            'is_public': True, 'description': 'Updated Contract!', 'save_type': 'public',
+            'contact_email': self.admin.email, 'department': self.department1.id,
+            'subcategories-{}'.format(Category.query.all()[-1].id): 'on',
+            'type': 'EmailOpportunity', 'submission_data': 'invalid@invalid.com'
+        })
+        # test type validation
+        self.assertTrue('not a valid contact' in bad_email.data)
+
+        self.client.post('/beacon/admin/opportunities/{}'.format(self.opportunity2.id), data={
+            'planned_submission_start': datetime.date.today(), 'title': 'Updated2',
+            'is_public': True, 'description': 'Updated Contract!', 'save_type': 'public',
+            'contact_email': self.admin.email, 'department': self.department1.id,
+            'subcategories-{}'.format(Category.query.all()[-1].id): 'on',
+            'type': 'EmailOpportunity', 'submission_data': self.admin.email
+        })
+
+        updated = Opportunity.query.get(opp2_id)
+        self.assertEquals(updated.type, 'EmailOpportunity')
+        self.assertEquals(updated.title, 'Updated2')
 
     def test_delete_document(self):
         opp = self.opportunity1
@@ -399,7 +427,7 @@ class TestOpportunityPublic(TestOpportunitiesAdminBase):
                 'planned_submission_start': datetime.date.today(),
                 'planned_submission_end': datetime.date.today() + datetime.timedelta(days=5),
                 'save_type': 'publish', 'subcategories-{}'.format(Category.query.all()[-1].id): 'on',
-                'type': 'Opportunity'
+                'type': 'NoSubmissionOpportunity'
             })
 
             self.assertEquals(Opportunity.query.count(), 5)
@@ -416,7 +444,7 @@ class TestOpportunityPublic(TestOpportunitiesAdminBase):
             'planned_submission_start': datetime.date.today(),
             'planned_submission_end': datetime.date.today() + datetime.timedelta(days=5),
             'save_type': 'save', 'subcategories-{}'.format(Category.query.all()[-1].id): 'on',
-            'type': 'Opportunity'
+            'type': 'NoSubmissionOpportunity'
         }
 
         self.login_user(self.admin)
@@ -446,7 +474,7 @@ class TestOpportunityPublic(TestOpportunitiesAdminBase):
             'planned_submission_start': datetime.date.today(),
             'planned_submission_end': datetime.date.today() + datetime.timedelta(days=5),
             'save_type': 'save', 'subcategories-{}'.format(Category.query.all()[-1].id): 'on',
-            'type': 'Opportunity'
+            'type': 'NoSubmissionOpportunity'
         }
 
         self.login_user(self.admin)

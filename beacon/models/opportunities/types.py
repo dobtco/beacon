@@ -7,6 +7,42 @@ from wtforms.validators import Email, DataRequired
 from beacon.forms.validators import city_domain_email
 from beacon.models.opportunities.base import Opportunity
 
+class NoSubmissionOpportunity(Opportunity):
+    __mapper_args__ = {
+        'polymorphic_identity': 'NoSubmissionOpportunity'
+    }
+
+    @classmethod
+    def get_opportunity_type(cls):
+        return (cls.__name__, 'No online submissions')
+
+    @classmethod
+    def get_help_block(cls):
+        return {cls.__name__: 'No additional data is required.'}
+
+    @classmethod
+    def validate(self, form):
+        return True
+
+    @classmethod
+    def serialize_submission_data(self, submission_data):
+        return None
+
+    def deserialize_submission_data(self):
+        return None
+
+    def render_instructions(self):
+        '''Render submission instructions to a vendor
+        '''
+        return Markup(
+            '<p>Please refer to the opportunity document for more information.</p>'
+        )
+
+    def submissions_page_exists(self):
+        '''Returns a boolean for whether or not a submissions page exists
+        '''
+        return False
+
 class EmailOpportunity(Opportunity):
     __mapper_args__ = {
         'polymorphic_identity': 'EmailOpportunity'
