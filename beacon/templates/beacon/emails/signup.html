@@ -6,7 +6,7 @@
 
 {% if categories|length > 20 %}
 <p>You've signed up to receive notifications about {{ categories|length }} categories. You can view all of them <a href="{{ url_for('front.manage', _external=True) }}">here.</a></p>
-{% else %}
+{% elif categories|length > 0 %}
 <p>You've signed up to receive notifications about the following categories:</p>
 <ul>
   {% for category in categories %}

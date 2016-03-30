@@ -290,7 +290,7 @@ class TestOpportunitiesSubscriptions(TestOpportunitiesAdminBase):
 
         # should redirect and flash properly
         self.assertEquals(post.status_code, 302)
-        self.assert_flashes('Successfully subscribed for updates!', 'alert-success')
+        self.assert_flashes("Successfully subscribed for updates! <a href='/signup'>Sign up</a> for alerts about future opportunities.", 'alert-success')
 
     def test_unicode_get(self):
         self.login_user(self.admin)
