@@ -22,7 +22,7 @@ class TestNotification(TestCase):
         self.assertListEqual(notification.cc_email, ['bazbar@bar.com', 'foobar@foo.com'])
         self.assertEquals(notification.subject, '')
         self.assertEquals(notification.html_body, 'a test')
-        self.assertEquals(notification.txt_body, '')
+        self.assertEquals(notification.txt_body, 'a test\n\n')
         self.assertEquals(notification.attachments, [])
 
     @patch('beacon.notifications.render_template', return_value='a test')

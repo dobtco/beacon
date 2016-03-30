@@ -11,6 +11,8 @@ from flask_mail import Message
 from beacon.compat import basestring
 from beacon.tasks import send_email
 
+import html2text
+
 class Notification(object):
     '''Build a new notification object
 
@@ -25,7 +27,6 @@ class Notification(object):
         cc_email: list of valid email addresses
         subject: subject line for the email that will be sent
         html_template: path to a jinja html template to be compiled
-        txt_template: path to a jinja text template to be compiled
         attachments: list of `FileStorage`_ objects
         reply_to: valid email that will be used and reply-to
         convert_args: Flag as to whether to convert all additional \**kwargs
@@ -39,7 +40,7 @@ class Notification(object):
         self, to_email=[], from_email=None,
         cc_email=[], subject='',
         html_template='/beacon/emails/email_admins.html',
-        txt_template=None, attachments=[], reply_to=None,
+        attachments=[], reply_to=None,
         convert_args=False, *args, **kwargs
     ):
         self.to_email = self.handle_recipients(to_email)
@@ -48,10 +49,7 @@ class Notification(object):
         self.cc_email = self.handle_recipients(cc_email)
         self.subject = subject
         self.html_body = self.build_msg_body(html_template, convert_args, *args, **kwargs)
-        if txt_template:
-            self.txt_body = self.build_msg_body(txt_template, convert_args, *args, **kwargs)
-        else:
-            self.txt_body = ''
+        self.txt_body = html2text.html2text(self.html_body)
         self.attachments = attachments
 
     def build_msg_body(self, template, convert_args, *args, **kwargs):

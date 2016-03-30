@@ -45,7 +45,6 @@ class QuestionForm(Form):
             to_email=[opportunity.created_by.email, opportunity.contact.email],
             subject='New question on Beacon',
             html_template='beacon/emails/new_question.html',
-            txt_template='beacon/emails/new_question.txt',
             question=question
         ).send(multi=True)
 

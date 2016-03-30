@@ -1,5 +1,0 @@
-This is an automated email to let you know that a new question has been asked by {{ question.asked_by.email }} about the following opportunity: {{ question.opportunity.title }}. The question is:
-
-{{ question.question_text }}
-
-You can answer the question on Beacon: {{ url_for('beacon_admin.answer_question', opportunity_id=question.opportunity_id, question_id=question.id, _external=True) }}
