@@ -44,7 +44,7 @@
 
   $('#type').on('change', function(e) {
     var newBlock = $(e.currentTarget).find(':selected').attr('data-help-block');
-    $('#submission_data-help-block').text(newBlock)
+    $('#submission_data-help-block').html(newBlock)
   })
 
 })();
