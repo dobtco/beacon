@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from werkzeug import secure_filename
 
-from flask import current_app, request, flash, redirect, url_for
+from flask import current_app, request, flash, redirect, url_for, Markup
 from flask_wtf import Form
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import fields, Form as NoCSRFForm
@@ -225,7 +225,7 @@ class OpportunitySignupForm(Form):
     def post_validate_action(self, opportunity):
         signup_success = signup_for_opp(self, opportunity)
         if signup_success:
-            flash('Successfully subscribed for updates!', 'alert-success')
+            flash(Markup("Successfully subscribed for updates! <a href=" + url_for('front.signup') + ">Sign up</a> for alerts about future opportunities."), 'alert-success')
             return redirect(url_for('front.detail', opportunity_id=opportunity.id))
 
 class UnsubscribeForm(Form):

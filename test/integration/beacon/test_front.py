@@ -2,7 +2,7 @@
 
 import json
 import datetime
-from flask import current_app, url_for
+from flask import current_app, url_for, Markup
 from werkzeug.datastructures import MultiDict
 
 from beacon.extensions import mail, db
@@ -290,7 +290,7 @@ class TestOpportunitiesSubscriptions(TestOpportunitiesAdminBase):
 
         # should redirect and flash properly
         self.assertEquals(post.status_code, 302)
-        self.assert_flashes('Successfully subscribed for updates!', 'alert-success')
+        self.assert_flashes(Markup("Successfully subscribed for updates! <a href=" + url_for('front.signup') + ">Sign up</a> for alerts about future opportunities."), 'alert-success')
 
     def test_unicode_get(self):
         self.login_user(self.admin)
@@ -319,7 +319,8 @@ class TestOpportunitiesSubscriptions(TestOpportunitiesAdminBase):
 
             # should redirect and flash properly
             self.assertEquals(post.status_code, 302)
-            self.assert_flashes('Successfully subscribed for updates!', 'alert-success')
+            self.assert_flashes(Markup("Successfully subscribed for updates! <a href=" + url_for('front.signup') + ">Sign up</a> for alerts about future opportunities."), 'alert-success')
+
 
             self.assertEquals(len(outbox), 1)
 

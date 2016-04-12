@@ -4,7 +4,7 @@ import datetime
 
 from flask import (
     render_template, request, current_app, flash,
-    redirect, url_for, session, abort, Blueprint
+    redirect, url_for, session, abort, Blueprint, Markup
 )
 
 from flask_security import current_user
@@ -224,7 +224,7 @@ def browse():
         if signup_for_opp(
             signup_form, opportunity=opportunities, multi=True
         ):
-            flash('Successfully subscribed for updates!', 'alert-success')
+            flash(Markup('Successfully subscribed for updates! <a href=' + url_for('front.signup') + '>Sign up</a> for alerts about future opportunities.'), 'alert-success')
             return redirect(url_for('front.browse'))
 
     opportunities = Opportunity.query.filter(
