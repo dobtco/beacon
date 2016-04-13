@@ -100,9 +100,9 @@ class Vendor(Model):
 
     id = Column(db.Integer, primary_key=True, index=True)
     business_name = Column(db.String(255), nullable=False)
-    email = Column(db.String(80), unique=True, nullable=False)
-    first_name = Column(db.String(30), nullable=True)
-    last_name = Column(db.String(30), nullable=True)
+    # email = Column(db.String(80), unique=True, nullable=False)
+    # first_name = Column(db.String(30), nullable=True)
+    # last_name = Column(db.String(30), nullable=True)
     phone_number = Column(db.String(20))
     fax_number = Column(db.String(20))
     minority_owned = Column(db.Boolean())
@@ -122,27 +122,27 @@ class Vendor(Model):
         collection_class=set
     )
 
-    subscribed_to_newsletter = Column(db.Boolean(), default=False, nullable=False)
+    # subscribed_to_newsletter = Column(db.Boolean(), default=False, nullable=False)
 
-    @classmethod
-    def newsletter_subscribers(cls):
-        '''Query to return all vendors signed up to the newsletter
-        '''
-        return cls.query.filter(cls.subscribed_to_newsletter == True).all()
+    # @classmethod
+    # def newsletter_subscribers(cls):
+    #     '''Query to return all vendors signed up to the newsletter
+    #     '''
+    #     return cls.query.filter(cls.subscribed_to_newsletter == True).all()
 
-    def build_downloadable_row(self):
-        '''Take a Vendor object and build a list for a .tsv download
+    # def build_downloadable_row(self):
+    #     '''Take a Vendor object and build a list for a .tsv download
 
-        Returns:
-            List of all vendor fields in order for a bulk vendor download
-        '''
-        return [
-            self.first_name, self.last_name, self.business_name,
-            self.email, self.phone_number, self.minority_owned,
-            self.woman_owned, self.veteran_owned, self.disadvantaged_owned,
-            build_downloadable_groups('category_friendly_name', self.categories),
-            build_downloadable_groups('title', self.opportunities)
-        ]
+    #     Returns:
+    #         List of all vendor fields in order for a bulk vendor download
+    #     '''
+    #     return [
+    #         self.first_name, self.last_name, self.business_name,
+    #         self.email, self.phone_number, self.minority_owned,
+    #         self.woman_owned, self.veteran_owned, self.disadvantaged_owned,
+    #         build_downloadable_groups('category_friendly_name', self.categories),
+    #         build_downloadable_groups('title', self.opportunities)
+    #     ]
 
     def __unicode__(self):
-        return self.email
+        return self.business_name

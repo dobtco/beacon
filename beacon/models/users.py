@@ -80,6 +80,10 @@ class User(UserMixin, SurrogatePK, Model):
         'Role', secondary=roles_users,
         backref=backref('users', lazy='dynamic'),
     )
+    vendor_id = db.relationship(
+        'Vendor', backref=backref('users', lazy='dynamic'),
+        foreign_keys=vendor_id, primaryjoin='User.department_id==Vendor.id'
+    )
 
     department_id = ReferenceCol('department', ondelete='SET NULL', nullable=True)
     department = db.relationship(
@@ -88,6 +92,7 @@ class User(UserMixin, SurrogatePK, Model):
     )
 
     password = db.Column(db.String(255))
+    
 
     confirmed_at = db.Column(db.DateTime)
     last_login_at = db.Column(db.DateTime)
@@ -95,6 +100,8 @@ class User(UserMixin, SurrogatePK, Model):
     last_login_ip = db.Column(db.String(255))
     current_login_ip = db.Column(db.String(255))
     login_count = db.Column(db.Integer)
+    subscribed_to_newsletter = Column(db.Boolean(), default=False, nullable=False)
+
 
     def __repr__(self):
         return '<User({email!r})>'.format(email=self.email)
@@ -169,6 +176,25 @@ class User(UserMixin, SurrogatePK, Model):
             return self.first_name
         else:
             return self.email.split('@')[0]
+
+    def newsletter_subscribers(cls):
+        '''Query to return all vendors signed up to the newsletter
+        '''
+        return cls.query.filter(cls.subscribed_to_newsletter == True).all()
+
+    def build_downloadable_row(self):
+        '''Take a Vendor object and build a list for a .tsv download
+
+        Returns:
+            List of all vendor fields in order for a bulk vendor download
+        '''
+        return [
+            self.first_name, self.last_name, self.business_name,
+            self.email, self.phone_number, self.minority_owned,
+            self.woman_owned, self.veteran_owned, self.disadvantaged_owned,
+            build_downloadable_groups('category_friendly_name', self.categories),
+            build_downloadable_groups('title', self.opportunities)
+        ]
 
 class Department(SurrogatePK, Model):
     '''Department model
