@@ -116,6 +116,7 @@ def signup():
 
         session['email'] = form.data.get('email')
         session['business_name'] = form.data.get('business_name')
+
         return redirect(url_for('front.splash'))
 
     page_email = request.args.get('email', None)
@@ -136,7 +137,8 @@ def signup():
     return render_template(
         'beacon/front/signup.html', form=form,
         categories=form.get_categories(),
-        subcategories=form.get_subcategories()
+        subcategories=form.get_subcategories(),
+        selected_subcategories=[i.id for i in form.data['categories']]
     )
 
 @blueprint.route('/manage', methods=['GET', 'POST'])
